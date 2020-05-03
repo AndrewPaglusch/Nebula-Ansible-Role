@@ -1,0 +1,91 @@
+pki:
+  # every node needs a copy of ca.crt, <client-name>.key,
+  # and <client-name>.crt
+  ca: /opt/nebula/ca.crt
+  cert: /opt/nebula/lighthouse.crt
+  key: /opt/nebula/lighthouse.key
+
+static_host_map:
+ # how to find one or more lighthouse nodes
+ # you do NOT need every node to be listed here!
+ # Similar to "trackers" for torrents
+ #
+ # format "<internal-nebula-ip-addr>": ["<pub-ip-addr>:[port] or <hostname>:[port]"]
+ #
+ "{{ nebula_lighthouse_internal_ip_addr }}": ["{{ nebula_lighthouse_public_hostname }}:{{ nebula_lighthouse_public_port }}"]
+
+lighthouse:
+  interval: 60
+
+  # if you're a lighthouse, say you're a lighthouse
+  #
+  am_lighthouse: true
+
+  hosts:
+    # If you're a lighthouse, this section should be EMPTY
+    # or commented out. If you're NOT a lighthouse, list
+    # lighthouse nodes here, one per line, in the following
+    # format:
+    #
+    # - "192.168.77.1"
+
+listen:
+  # 0.0.0.0 means "all interfaces," which is probably what you want
+  #
+  host: 0.0.0.0
+  port: {{ nebula_lighthouse_public_port }}
+
+# "punchy" basically means "send frequent keepalive packets"
+# so that your router won't expire and close your NAT tunnels.
+#
+punchy: true
+
+# "punch_back" allows the other node to try punching out to you,
+# if you're having trouble punching out to it. Useful for stubborn
+# networks with symmetric NAT, etc.
+#
+punch_back: true
+
+tun:
+  # sensible defaults. don't monkey with these unless
+  # you're CERTAIN you know what you're doing.
+  #
+  dev: neb0
+  drop_local_broadcast: false
+  drop_multicast: false
+  tx_queue: 500
+  mtu: 1300
+  routes:
+
+logging:
+  level: info
+  format: text
+
+# you NEED this firewall section.
+#
+# Nebula has its own firewall in addition to anything
+# your system has in place, and it's all default deny.
+#
+# So if you don't specify some rules here, you'll drop
+# all traffic, and curse and wonder why you can't ping
+# one node from another.
+#
+firewall:
+  conntrack:
+    tcp_timeout: 120h
+    udp_timeout: 3m
+    default_timeout: 10m
+    max_connections: 100000
+
+# since everything is default deny, all rules you
+# actually SPECIFY here are allow rules.
+#
+  outbound:
+    - port: any
+      proto: any
+      host: any
+
+  inbound:
+    - port: any
+      proto: any
+      host: any

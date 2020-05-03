@@ -1,0 +1,147 @@
+---
+- name: Install Nebula
+  hosts: all
+  gather_facts: yes
+  user: root
+  tasks:
+    - include_vars: nebula_vars.yml
+
+    - name: Ensure /opt/nebula directory exists
+      file:
+        path: /opt/nebula
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+    
+    - name: Download & Extract Nebula
+      unarchive:
+        src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-amd64.tar.gz"
+        dest: "/opt/nebula"
+        remote_src: yes
+        creates: '/opt/nebula/nebula'
+    
+    - name: Ensure Nebula binaries permissions are correct
+      file:
+        path: "/opt/nebula/{{ item }}"
+        owner: root
+        group: root
+        mode: '0700'
+      with_items:
+        - nebula
+        - nebula-cert
+
+- name: Deploy Lighthouse
+  hosts: nebula_lighthouse
+  gather_facts: no
+  user: root
+  handlers:
+    - name: Restart Lighthouse
+      systemd: 
+        name: lighthouse
+        state: restarted
+
+  tasks:
+    - include_vars: nebula_vars.yml
+
+    - name: Ensure CA cert/key exists
+      command:
+        chdir: /opt/nebula
+        cmd: ./nebula-cert ca -name "{{ nebula_network_name }}"
+        creates: /opt/nebula/ca.crt
+
+    - name: Ensure lighthouse cert/key exists
+      command:
+        chdir: /opt/nebula
+        cmd: ./nebula-cert sign -name "{{ nebula_lighthouse_hostname }}" -ip "{{ nebula_lighthouse_internal_ip_addr }}/{{ nebula_network_cidr }}"
+        creates: "/opt/nebula/{{ nebula_lighthouse_hostname }}.crt"
+
+    - name: Ensure a cert/key exists for each node
+      command:
+        chdir: /opt/nebula
+        cmd: ./nebula-cert sign -name "{{ hostvars[item]['ansible_facts']['hostname'] }}" -ip "{{ hostvars[item]['nebula_internal_ip_addr'] }}/{{ nebula_network_cidr }}"
+        creates: "/opt/nebula/{{ hostvars[item]['ansible_facts']['hostname'] }}.crt"
+      with_items: "{{ groups.nebula_nodes }}"
+
+    - name: Ensure lighthouse is configured
+      template:
+        src: lighthouse_config.yml.j2 
+        dest: /opt/nebula/config.yml
+        owner: root
+        group: root
+        mode: '0400'
+      notify: Restart Lighthouse
+
+    - name: Ensure lighthouse service exists
+      template:
+        src: lighthouse.service.j2
+        dest: /etc/systemd/system/lighthouse.service
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Ensure lighthouse service is enabled and running
+      systemd: 
+        name: lighthouse
+        daemon_reload: yes
+        enabled: yes
+        masked: no
+        state: started
+
+- name: Deploy Nebula Nodes
+  hosts: nebula_nodes
+  gather_facts: no
+  user: root
+  handlers:
+    - name: Restart Nebula
+      systemd:
+        name: nebula
+        state: restarted
+  tasks:
+    - include_vars: nebula_vars.yml
+
+    - name: Read cert/key from lighthouse
+      slurp:
+        src: "/opt/nebula/{{ item }}"
+      register: lighthouse_files
+      delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+      with_items: 
+        - "{{ ansible_facts['hostname'] }}.crt"
+        - "{{ ansible_facts['hostname'] }}.key"
+        - ca.crt
+
+    - name: Ensure Cert, Key, CA files exist
+      copy:
+        dest: "/opt/nebula/{{ item['item'] }}"
+        content: "{{ item['content'] | b64decode }}"
+        owner: root
+        group: root
+        mode: 0600
+      loop: "{{ lighthouse_files.results }}"
+      loop_control:
+        label: "{{ item['item'] }}"
+
+    - name: Ensure Nebula is configured
+      template:
+        src: node_config.yml.j2 
+        dest: /opt/nebula/config.yml
+        owner: root
+        group: root
+        mode: '0400'
+      notify: Restart Nebula
+
+    - name: Ensure Nebula service exists
+      template:
+        src: node.service.j2
+        dest: /etc/systemd/system/nebula.service
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Ensure Nebula service is enabled and running
+      systemd: 
+        name: nebula
+        daemon_reload: yes
+        enabled: yes
+        masked: no
+        state: started

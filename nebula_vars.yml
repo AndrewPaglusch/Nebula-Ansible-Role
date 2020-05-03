@@ -1,0 +1,7 @@
+nebula_version: 1.2.0
+nebula_network_name: "My Nebula Mesh Network"
+nebula_network_cidr: 24
+nebula_lighthouse_hostname: lighthouse
+nebula_lighthouse_internal_ip_addr: 192.168.77.1
+nebula_lighthouse_public_hostname: my-nebula-server.com
+nebula_lighthouse_public_port: 4242

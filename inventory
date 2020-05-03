@@ -1,0 +1,9 @@
+[all:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[nebula_lighthouse]
+11.22.33.44
+
+[nebula_nodes]
+22.33.44.55 nebula_internal_ip_addr=192.168.77.2
+33.44.55.66 nebula_internal_ip_addr=192.168.77.3
