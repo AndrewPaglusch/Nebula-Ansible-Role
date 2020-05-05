@@ -78,7 +78,7 @@
         dest: /etc/systemd/system/lighthouse.service
         owner: root
         group: root
-        mode: '0755'
+        mode: '0644'
 
     - name: Ensure lighthouse service is enabled and running
       systemd: 
@@ -136,7 +136,7 @@
         dest: /etc/systemd/system/nebula.service
         owner: root
         group: root
-        mode: '0755'
+        mode: '0644'
 
     - name: Ensure Nebula service is enabled and running
       systemd: 
