@@ -1,6 +1,8 @@
 nebula_version: 1.2.0
 nebula_network_name: "My Nebula Mesh Network"
 nebula_network_cidr: 24
+nebula_ca_cert_duration: "87600h1m0s" #10 years, 1 hour
+nebula_client_cert_duration: "87600h0m0s" #10 years
 nebula_lighthouse_hostname: lighthouse
 nebula_lighthouse_internal_ip_addr: 192.168.77.1
 nebula_lighthouse_public_hostname: my-nebula-server.com
