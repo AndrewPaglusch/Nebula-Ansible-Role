@@ -47,19 +47,19 @@
     - name: Ensure CA cert/key exists
       command:
         chdir: /opt/nebula
-        cmd: ./nebula-cert ca -name "{{ nebula_network_name }}"
+        cmd: ./nebula-cert ca -name "{{ nebula_network_name }}" -duration "{{ nebula_ca_cert_duration }}"
         creates: /opt/nebula/ca.crt
 
     - name: Ensure lighthouse cert/key exists
       command:
         chdir: /opt/nebula
-        cmd: ./nebula-cert sign -name "{{ nebula_lighthouse_hostname }}" -ip "{{ nebula_lighthouse_internal_ip_addr }}/{{ nebula_network_cidr }}"
+        cmd: ./nebula-cert sign -name "{{ nebula_lighthouse_hostname }}" -ip "{{ nebula_lighthouse_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
         creates: "/opt/nebula/{{ nebula_lighthouse_hostname }}.crt"
 
     - name: Ensure a cert/key exists for each node
       command:
         chdir: /opt/nebula
-        cmd: ./nebula-cert sign -name "{{ hostvars[item]['ansible_facts']['hostname'] }}" -ip "{{ hostvars[item]['nebula_internal_ip_addr'] }}/{{ nebula_network_cidr }}"
+        cmd: ./nebula-cert sign -name "{{ hostvars[item]['ansible_facts']['hostname'] }}" -ip "{{ hostvars[item]['nebula_internal_ip_addr'] }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
         creates: "/opt/nebula/{{ hostvars[item]['ansible_facts']['hostname'] }}.crt"
       with_items: "{{ groups.nebula_nodes }}"
 
