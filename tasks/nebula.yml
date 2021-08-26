@@ -9,7 +9,7 @@
 # TODO: Detect cpu arch correctly
 - name: Download & Extract Nebula
   unarchive:
-    src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ cpu_arch | default('amd64') }}.tar.gz"
+    src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_architecture] }}.tar.gz"
     dest: "/opt/nebula"
     remote_src: yes
     creates: '/opt/nebula/nebula'
