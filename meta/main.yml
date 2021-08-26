@@ -1,0 +1,15 @@
+---
+dependencies: []
+
+galaxy_info:
+  role_name: nebula
+  author: AndrewPaglusch
+  description: Nebula Overlay Mesh VPN
+  license: "MIT"
+  min_ansible_version: 2.4
+  galaxy_tags:
+    - nebula
+    - vpn
+    - network
+    - overlay
+    - mesh
