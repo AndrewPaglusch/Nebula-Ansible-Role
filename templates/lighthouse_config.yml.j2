@@ -2,8 +2,8 @@ pki:
   # every node needs a copy of ca.crt, <client-name>.key,
   # and <client-name>.crt
   ca: /opt/nebula/ca.crt
-  cert: /opt/nebula/lighthouse.crt
-  key: /opt/nebula/lighthouse.key
+  cert: /opt/nebula/{{ nebula_lighthouse_hostname }}.crt
+  key: /opt/nebula/{{ nebula_lighthouse_hostname }}.key
 
 static_host_map:
  # how to find one or more lighthouse nodes

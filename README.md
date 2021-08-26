@@ -21,7 +21,6 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
     nebula_network_name: "Company Nebula Mgmt Net"
     nebula_network_cidr: 16
 
-    nebula_lighthouse_hostname: lighthouse
     nebula_lighthouse_internal_ip_addr: 10.43.0.1
     nebula_lighthouse_public_hostname: lighthouse.company.com
     nebula_lighthouse_public_port: 4242
