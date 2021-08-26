@@ -1,0 +1,9 @@
+- name: Restart Nebula
+  systemd:
+    name: nebula
+    state: restarted
+
+- name: Restart Lighthouse
+  systemd:
+    name: lighthouse
+    state: restarted

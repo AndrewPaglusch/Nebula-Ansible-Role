@@ -1,0 +1,25 @@
+- name: Ensure /opt/nebula directory exists
+  file:
+    path: /opt/nebula
+    state: directory
+    mode: '0700'
+    owner: root
+    group: root
+
+# TODO: Detect cpu arch correctly
+- name: Download & Extract Nebula
+  unarchive:
+    src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ cpu_arch | default('amd64') }}.tar.gz"
+    dest: "/opt/nebula"
+    remote_src: yes
+    creates: '/opt/nebula/nebula'
+
+- name: Ensure Nebula binaries permissions are correct
+  file:
+    path: "/opt/nebula/{{ item }}"
+    owner: root
+    group: root
+    mode: '0700'
+  with_items:
+    - nebula
+    - nebula-cert

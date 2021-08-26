@@ -1,0 +1,77 @@
+- name: Ensure a cert/key exists for each node on lighthouse
+  command:
+    chdir: /opt/nebula
+    cmd: ./nebula-cert sign -name "{{ inventory_hostname }}" -ip "{{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
+    creates: "/opt/nebula/{{ inventory_hostname }}.crt"
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+
+- name: Ensure lighthouse has hosts file entry for node
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ nebula_internal_ip_addr }} {{ inventory_hostname }}.neb"
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+
+- name: Ensure node has hosts file entry for lighthouse
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ nebula_lighthouse_internal_ip_addr }} {{ nebula_lighthouse_hostname }}.neb {{ nebula_lighthouse_hostname }}"
+
+- name: Read cert/key from lighthouse
+  slurp:
+    src: "/opt/nebula/{{ item }}"
+  register: lighthouse_files
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  with_items: 
+    - "{{ inventory_hostname }}.crt"
+    - "{{ inventory_hostname }}.key"
+    - ca.crt
+
+- name: Ensure Cert, Key, CA files exist
+  copy:
+    dest: "/opt/nebula/{{ item['item'] }}"
+    content: "{{ item['content'] | b64decode }}"
+    owner: root
+    group: root
+    mode: 0600
+  loop: "{{ lighthouse_files.results }}"
+  loop_control:
+    label: "{{ item['item'] }}"
+
+- name: Ensure Nebula is configured
+  template:
+    src: node_config.yml.j2 
+    dest: /opt/nebula/config.yml
+    owner: root
+    group: root
+    mode: '0400'
+  notify: Restart Nebula
+
+- name: Ensure Nebula service exists
+  template:
+    src: node.service.j2
+    dest: /etc/systemd/system/nebula.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure Nebula service is enabled and running
+  systemd: 
+    name: nebula
+    daemon_reload: yes
+    enabled: yes
+    masked: no
+    state: started
+
+- name: Ensure nebula-check is present
+  template:
+    src: nebula-check.sh.j2
+    dest: /opt/nebula/nebula-check.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Ensure nebula-check is scheduled via cron
+  cron:
+    name: "nebula-check"
+    minute: "*/5"
+    job: "/opt/nebula/nebula-check.sh"

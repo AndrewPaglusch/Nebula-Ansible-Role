@@ -1,0 +1,7 @@
+#!/bin/bash
+PATH=/usr/bin:/bin:/sbin:/usr/sbin
+test="$(ping -q -w10 -W2 {{ nebula_lighthouse_internal_ip_addr }} 2>/dev/null | grep -oP '\d{1,3}(?=%)')"
+if [ "$test" == "100" ]; then
+  logger -s -p user.emerg '!!! Unable to reach Nebula server. Bouncing tunnel neb0... !!!'
+  systemctl restart nebula.service
+fi

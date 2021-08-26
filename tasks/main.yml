@@ -1,0 +1,11 @@
+---
+- name: Install Nebula on all hosts 
+  include: nebula.yml
+
+- name: Deploy Lighthouse
+  include: lighthouse.yml 
+  when: inventory_hostname in groups['nebula_lighthouse']
+
+- name: Deploy Nebula Node
+  include: node.yml
+  when: inventory_hostname not in groups['nebula_lighthouse']
