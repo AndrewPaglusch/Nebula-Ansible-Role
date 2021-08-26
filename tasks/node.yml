@@ -14,7 +14,7 @@
 - name: Ensure node has hosts file entry for lighthouse
   lineinfile:
     path: /etc/hosts
-    line: "{{ nebula_lighthouse_internal_ip_addr }} {{ nebula_lighthouse_hostname }}.neb {{ nebula_lighthouse_hostname }}"
+    line: "{{ nebula_lighthouse_internal_ip_addr }} {{ nebula_lighthouse_hostname }}.neb"
 
 - name: Read cert/key from lighthouse
   slurp:
