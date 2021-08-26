@@ -1,8 +1,6 @@
 # Ansible Role for Nebula
 
-Quickly and easily deploy the [Nebula Overlay VPN](https://github.com/slackhq/nebula) software onto all of your hosts. Just add your servers to the `inventory` file and then edit `nebula_vars.yml`.
-
-This playbook is meant to get you up and running with Nebula quickly with sane defaults.
+Quickly and easily deploy the [Nebula Overlay VPN](https://github.com/slackhq/nebula) software onto all of your hosts.
 
 # What Is Nebula
 
