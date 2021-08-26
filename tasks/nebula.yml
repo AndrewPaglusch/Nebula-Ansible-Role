@@ -6,7 +6,6 @@
     owner: root
     group: root
 
-# TODO: Detect cpu arch correctly
 - name: Download & Extract Nebula
   unarchive:
     src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_architecture] }}.tar.gz"
