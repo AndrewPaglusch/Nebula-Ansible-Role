@@ -44,4 +44,4 @@
   replace:
     path: /etc/hosts
     backup: yes
-    regexp: '^.+\.neb$'
+    regexp: '^.+\.neb$\n'
