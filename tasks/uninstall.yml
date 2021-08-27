@@ -22,6 +22,7 @@
         state: stopped
         daemon_reload: yes
         enabled: no
+      ignore_errors: true
 
     - name: Remove nebula systemd service
       file:
@@ -40,4 +41,7 @@
     state: absent
 
 - name: Clear .neb entries from /etc/hosts
-  command: sed -i '/\.neb/d' /etc/hosts
+  replace:
+    path: /etc/hosts
+    backup: yes
+    regexp: '^.+\.neb$'
