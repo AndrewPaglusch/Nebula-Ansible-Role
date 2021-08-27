@@ -1,0 +1,43 @@
+---
+- name: Remove Nebula Lighthouse
+  block:
+    - name: Stop lighthouse service
+      systemd:
+        name: lighthouse
+        state: stopped
+        daemon_reload: yes
+        enabled: no
+    
+    - name: Remove lighthouse systemd service
+      file:
+        path: /etc/systemd/system/lighthouse.service
+        state: absent
+  when: inventory_hostname in groups['nebula_lighthouse']
+
+- name: Remove Nebula nodes
+  block:
+    - name: Stop nebula service
+      systemd:
+        name: nebula
+        state: stopped
+        daemon_reload: yes
+        enabled: no
+
+    - name: Remove nebula systemd service
+      file:
+        path: /etc/systemd/system/nebula.service
+        state: absent
+  when: inventory_hostname not in groups['nebula_lighthouse']
+
+- name: Remove Nebula installation directory
+  file:
+    path: /opt/nebula
+    state: absent
+
+- name: Remove Nebula check from cron
+  cron:
+    name: "nebula-check"
+    state: absent
+
+- name: Clear .neb entries from /etc/hosts
+  command: sed -i '/\.neb/d' /etc/hosts
