@@ -3,6 +3,7 @@ nebula_network_name: "My Nebula Mesh Network"
 nebula_network_cidr: 24
 nebula_ca_cert_duration: "87600h0m0s" #10 years
 nebula_client_cert_duration: "43800h0m0s" #5 years
+nebula_clean_install: false
 
 nebula_lighthouse_hostname: lighthouse
 nebula_lighthouse_internal_ip_addr: 192.168.77.1
@@ -13,3 +14,4 @@ nebula_default_inbound_rules:
   - { port: "any", proto: "any", host: "any" }
 nebula_default_outbound_rules:
   - { port: "any", proto: "any", host: "any" }
+

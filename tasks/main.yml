@@ -1,4 +1,8 @@
 ---
+- name: Uninstall Nebula (clean install)
+  include: uninstall.yml
+  when: nebula_clean_install
+
 - name: Install Nebula on all hosts 
   include: nebula.yml
 
