@@ -7,6 +7,7 @@
         state: stopped
         daemon_reload: yes
         enabled: no
+      ignore_errors: true
     
     - name: Remove lighthouse systemd service
       file:
