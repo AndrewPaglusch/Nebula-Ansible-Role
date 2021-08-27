@@ -1,15 +1,18 @@
 ---
-- name: Uninstall Nebula (clean install)
-  include: uninstall.yml
-  when: nebula_clean_install
-
-- name: Install Nebula on all hosts 
-  include: nebula.yml
-
-- name: Deploy Lighthouse
-  include: lighthouse.yml 
-  when: inventory_hostname in groups['nebula_lighthouse']
-
-- name: Deploy Nebula Node
-  include: node.yml
-  when: inventory_hostname not in groups['nebula_lighthouse']
+- name: Nebula Install
+  block:
+    - name: Uninstall Nebula (clean install)
+      include: uninstall.yml
+      when: nebula_clean_install
+    
+    - name: Install Nebula on all hosts 
+      include: nebula.yml
+    
+    - name: Deploy Lighthouse
+      include: lighthouse.yml 
+      when: inventory_hostname in groups['nebula_lighthouse']
+    
+    - name: Deploy Nebula Node
+      include: node.yml
+      when: inventory_hostname not in groups['nebula_lighthouse']
+  when: inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
