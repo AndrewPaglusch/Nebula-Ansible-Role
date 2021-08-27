@@ -3,7 +3,7 @@
   block:
     - name: Uninstall Nebula (clean install)
       include: uninstall.yml
-      when: nebula_clean_install
+      when: nebula_clean_install|bool
     
     - name: Install Nebula on all hosts 
       include: nebula.yml
