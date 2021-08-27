@@ -69,9 +69,11 @@
     owner: root
     group: root
     mode: '0755'
+  when: nebula_install_check_cron
 
 - name: Ensure nebula-check is scheduled via cron
   cron:
     name: "nebula-check"
     minute: "*/5"
     job: "/opt/nebula/nebula-check.sh"
+  when: nebula_install_check_cron
