@@ -28,8 +28,6 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
     nebula_inbound_rules:
       - { port: "any", proto: "icmp", host: "any" }
       - { port: 22, proto: "tcp", host: "any" }
-      - { port: 4505, proto: "tcp", cidr: "10.43.0.1/32" }
-      - { port: 4506, proto: "tcp", cidr: "10.43.0.1/32" }
     nebula_outbound_rules:
       - { port: "any", proto: "any", host: "any" }
 
