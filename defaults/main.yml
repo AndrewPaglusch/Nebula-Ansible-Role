@@ -4,6 +4,8 @@ nebula_network_cidr: 24
 nebula_ca_cert_duration: "87600h0m0s" #10 years
 nebula_client_cert_duration: "43800h0m0s" #5 years
 nebula_clean_install: false
+nebula_lighthouse_build_hosts_file: true
+nebula_node_lighthouse_in_hosts_file: true 
 
 nebula_lighthouse_hostname: lighthouse
 nebula_lighthouse_internal_ip_addr: 192.168.77.1
