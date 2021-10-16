@@ -10,11 +10,13 @@
     path: /etc/hosts
     line: "{{ nebula_internal_ip_addr }} {{ inventory_hostname }}.neb"
   delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  when: nebula_lighthouse_build_hosts_file
 
 - name: Ensure node has hosts file entry for lighthouse
   lineinfile:
     path: /etc/hosts
     line: "{{ nebula_lighthouse_internal_ip_addr }} {{ nebula_lighthouse_hostname }}.neb"
+  when: nebula_node_lighthouse_in_hosts_file
 
 - name: Read cert/key from lighthouse
   slurp:
