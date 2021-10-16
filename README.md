@@ -25,14 +25,12 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
     nebula_lighthouse_public_hostname: lighthouse.company.com
     nebula_lighthouse_public_port: 4242
 
-    nebula_default_inbound_rules:
-      - { port: 22, proto: "tcp", host: "any" }
+    nebula_inbound_rules:
       - { port: "any", proto: "icmp", host: "any" }
-    nebula_default_outbound_rules:
       - { port: 22, proto: "tcp", host: "any" }
-      - { port: "any", proto: "icmp", host: "any" }
-      - { port: 4505, proto: "tcp", host: "10.43.0.1/32" }
-      - { port: 4506, proto: "tcp", host: "10.43.0.1/32" }
+    nebula_outbound_rules:
+      - { port: "any", proto: "any", host: "any" }
+
   roles:
     - role: nebula
 ```

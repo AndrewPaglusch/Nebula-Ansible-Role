@@ -82,14 +82,14 @@ firewall:
 #
 
   outbound:
-{% for rule in nebula_default_outbound_rules %}
+{% for rule in nebula_outbound_rules %}
     - port: {{ rule.port }}
       proto: {{ rule.proto }}
       host: {{ rule.host }}
 {% endfor %}
 
   inbound:
-{% for rule in nebula_default_outbound_rules %}
+{% for rule in nebula_inbound_rules %}
     - port: {{ rule.port }}
       proto: {{ rule.proto }}
       host: {{ rule.host }}
