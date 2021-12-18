@@ -46,7 +46,7 @@
     owner: root
     group: root
     mode: '0400'
-  notify: Restart Nebula
+  notify: restart nebula
 
 - name: Ensure Nebula service exists
   template:
