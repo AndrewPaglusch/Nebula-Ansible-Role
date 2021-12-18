@@ -6,12 +6,30 @@
     owner: root
     group: root
 
+- name: Check for existing Nebula install
+  stat:
+    path: '/opt/nebula/nebula'
+  register: installed_nebula_stats
+
+- name: Get Nebula version (if installed)
+  command: "/opt/nebula/nebula -version"
+  register: installed_nebula_version_out
+  changed_when: False
+  failed_when: False
+  when: installed_nebula_stats.stat.exists
+
+- name: Extract Nebula version from command output
+  set_fact:
+    installed_nebula_version: "{{ installed_nebula_version_out.stdout.split(' ')[1] }}"
+  when: installed_nebula_stats.stat.exists
+
 - name: Download & Extract Nebula
   unarchive:
     src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_architecture] }}.tar.gz"
     dest: "/opt/nebula"
     remote_src: yes
-    creates: '/opt/nebula/nebula'
+  when: (installed_nebula_version|default(nebula_version) != nebula_version) or (not installed_nebula_stats.stat.exists)
+  notify: restart nebula
 
 - name: Ensure Nebula binaries permissions are correct
   file:
