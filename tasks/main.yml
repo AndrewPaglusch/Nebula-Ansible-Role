@@ -2,17 +2,17 @@
 - name: Nebula Install
   block:
     - name: Uninstall Nebula (clean install)
-      include: uninstall.yml
+      include_tasks: uninstall.yml
       when: nebula_clean_install|bool
     
     - name: Install Nebula on all hosts 
-      include: nebula.yml
+      include_tasks: nebula.yml
     
     - name: Deploy Lighthouse
-      include: lighthouse.yml 
+      include_tasks: lighthouse.yml
       when: inventory_hostname in groups['nebula_lighthouse']
     
     - name: Deploy Nebula Node
-      include: node.yml
+      include_tasks: node.yml
       when: inventory_hostname not in groups['nebula_lighthouse']
   when: inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
