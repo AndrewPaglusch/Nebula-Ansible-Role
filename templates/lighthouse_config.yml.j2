@@ -28,8 +28,9 @@ lighthouse:
     # format:
     #
     # - "192.168.77.1"
-
-  {{ nebula_lighthouse_extra_config | to_nice_yaml | indent(2) }}
+  {% if nebula_lighthouse_extra_config|length > 0 %}
+  {{- nebula_lighthouse_extra_config | to_nice_yaml | indent(2) }}
+  {% endif %}
 
 listen:
   # 0.0.0.0 means "all interfaces," which is probably what you want
