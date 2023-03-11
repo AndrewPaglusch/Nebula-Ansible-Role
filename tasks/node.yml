@@ -76,6 +76,6 @@
 - name: Ensure nebula-check is scheduled via cron
   cron:
     name: "nebula-check"
-    minute: "*/5"
+    minute: "{{ nebula_check_cron_minute | default('*/5') }}"
     job: "/opt/nebula/nebula-check.sh"
   when: nebula_install_check_cron|bool
