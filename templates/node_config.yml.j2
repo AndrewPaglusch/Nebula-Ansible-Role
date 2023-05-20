@@ -71,6 +71,8 @@ logging:
 # one node from another.
 #
 firewall:
+  outbound_action: {{ nebula_firewall_block_action | default('drop') }}
+  inbound_action: {{ nebula_firewall_block_action | default('drop') }}
   conntrack:
     tcp_timeout: 120h
     udp_timeout: 3m

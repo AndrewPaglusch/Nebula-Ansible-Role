@@ -25,6 +25,8 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
     nebula_lighthouse_public_hostname: lighthouse.company.com
     nebula_lighthouse_public_port: 4242
 
+    nebula_firewall_drop_action: reject
+
     nebula_inbound_rules:
       - { port: "any", proto: "icmp", host: "any" }
       - { port: 22, proto: "tcp", host: "any" }
