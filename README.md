@@ -17,7 +17,7 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
   user: ansible
   become: yes
   vars:
-    nebula_version: 1.4.0
+    nebula_version: 1.8.0
     nebula_network_name: "Company Nebula Mgmt Net"
     nebula_network_cidr: 16
 
