@@ -50,6 +50,8 @@ backup01.company.com nebula_internal_ip_addr=10.43.0.5
 pbx01.company.com nebula_internal_ip_addr=10.43.0.6
 ```
 
+**Note:** More variables can be found in the [role defaults.](defaults/main.yml)
+
 # Running the Playbook
 ```
 ansible-playbook -i inventory nebula.yml
