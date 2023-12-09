@@ -68,6 +68,15 @@ logging:
   level: info
   format: text
 
+{% if nebula_metrics_prometheus_enabled %}
+stats:
+  type: prometheus
+  listen: {{ nebula_metrics_prometheus_listen }}
+  path: {{ nebula_metrics_prometheus_path }}
+  namespace: {{ nebula_metrics_prometheus_namespace }}
+  interval: {{ nebula_metrics_prometheus_interval }}
+{% endif %}
+
 # you NEED this firewall section.
 #
 # Nebula has its own firewall in addition to anything

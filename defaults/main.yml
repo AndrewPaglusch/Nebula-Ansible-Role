@@ -17,6 +17,12 @@ nebula_lighthouse_public_port: 4242
 nebula_lighthouse_is_relay: true
 nebula_lighthouse_extra_config: {}
 
+nebula_metrics_prometheus_enabled: false
+nebula_metrics_prometheus_listen: "127.0.0.1:4244"
+nebula_metrics_prometheus_path: "/metrics"
+nebula_metrics_prometheus_namespace: nebula
+nebula_metrics_prometheus_interval: 10s
+
 nebula_firewall_block_action: drop
 
 nebula_inbound_rules:
