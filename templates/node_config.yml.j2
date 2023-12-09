@@ -40,6 +40,12 @@ listen:
 #
 punchy: true
 
+relay:
+  am_relay: false
+  use_relays: {{ nebula_node_use_lighthouse_as_relay }}
+  relays:
+    - {{ nebula_lighthouse_internal_ip_addr }}
+
 # "punch_back" allows the other node to try punching out to you,
 # if you're having trouble punching out to it. Useful for stubborn
 # networks with symmetric NAT, etc.
@@ -71,8 +77,8 @@ logging:
 # one node from another.
 #
 firewall:
-  outbound_action: {{ nebula_firewall_block_action | default('drop') }}
-  inbound_action: {{ nebula_firewall_block_action | default('drop') }}
+  outbound_action: {{ nebula_firewall_block_action }}
+  inbound_action: {{ nebula_firewall_block_action }}
   conntrack:
     tcp_timeout: 120h
     udp_timeout: 3m
