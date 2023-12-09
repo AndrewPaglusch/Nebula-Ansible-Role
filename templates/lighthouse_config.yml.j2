@@ -49,6 +49,10 @@ punchy: true
 #
 punch_back: true
 
+relay:
+  am_relay: {{ nebula_lighthouse_is_relay }}
+  use_relays: false
+
 tun:
   # sensible defaults. don't monkey with these unless
   # you're CERTAIN you know what you're doing.
@@ -74,8 +78,8 @@ logging:
 # one node from another.
 #
 firewall:
-  outbound_action: {{ nebula_firewall_block_action | default('drop') }}
-  inbound_action: {{ nebula_firewall_block_action | default('drop') }}
+  outbound_action: {{ nebula_firewall_block_action }}
+  inbound_action: {{ nebula_firewall_block_action }}
   conntrack:
     tcp_timeout: 120h
     udp_timeout: 3m

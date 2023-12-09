@@ -6,6 +6,7 @@ nebula_client_cert_duration: "43800h0m0s" #5 years
 nebula_clean_install: false
 nebula_lighthouse_build_hosts_file: true
 nebula_node_lighthouse_in_hosts_file: true
+nebula_node_use_lighthouse_as_relay: true
 nebula_install_check_cron: true
 
 
@@ -13,6 +14,7 @@ nebula_lighthouse_hostname: lighthouse
 nebula_lighthouse_internal_ip_addr: 192.168.77.1
 nebula_lighthouse_public_hostname: my-nebula-server.com
 nebula_lighthouse_public_port: 4242
+nebula_lighthouse_is_relay: true
 nebula_lighthouse_extra_config: {}
 
 nebula_firewall_block_action: drop
