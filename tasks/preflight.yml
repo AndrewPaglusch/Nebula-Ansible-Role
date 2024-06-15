@@ -1,0 +1,22 @@
+---
+- name: Preflight checks
+  block:
+    - name: Collecting all nebula_internal_ip_addr values
+      set_fact:
+        sorted_ips: "{{ hostvars | map('extract', hostvars, ['nebula_internal_ip_addr']) | list | sort }}"
+
+    - name: Initialize duplicated_ips list
+      set_fact:
+        duplicated_ips: []
+
+    - name: Looking for duplicate IP addresses
+      set_fact:
+        duplicated_ips: "{{ duplicated_ips + [item] }}"
+      loop: "{{ sorted_ips | unique }}"
+      when: "sorted_ips | select('equalto', item) | list | length > 1"
+
+    - name: Fail if duplicate IP addresses are found
+      fail:
+        msg: "You have one or more hosts with duplicate IP addresses assigned: {{ duplicated_ips }}"
+      when: duplicated_ips | length > 0
+  run_once: true
