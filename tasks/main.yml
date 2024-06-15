@@ -4,7 +4,10 @@
     - name: Uninstall Nebula (clean install)
       include_tasks: uninstall.yml
       when: nebula_clean_install|bool
-    
+
+    - name: Preflight checks
+      include_tasks: preflight.yml
+
     - name: Install Nebula on all hosts 
       include_tasks: nebula.yml
     
