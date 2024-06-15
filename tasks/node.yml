@@ -1,9 +1,47 @@
+- name: Check if node certificate exists on lighthouse
+  stat:
+    path: /opt/nebula/{{ inventory_hostname }}.crt
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  register: cert_stat
+
+- name: Get information about existing certificate (if it exists)
+  command: "/opt/nebula/nebula-cert print -json -path /opt/nebula/{{ inventory_hostname }}.crt"
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  changed_when: false
+  when: cert_stat.stat.exists
+  register: current_cert_json
+  ignore_errors: yes
+
+- name: Parse the IP address from the certificate details (if it exists)
+  set_fact:
+    current_cert_ip: "{{ current_cert_json.stdout | from_json | json_query('details.ips[0]') }}"
+  when:
+    - cert_stat.stat.exists
+    - current_cert_json.stdout != ""
+
+- name: Print IP address from cert (if one exists)
+  debug:
+    msg: "IP Address in Cert: {{ current_cert_ip }}, Expected IP Address: {{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}"
+  when: cert_stat.stat.exists
+
+- name: Delete invalid node certificate and key from lighthouse (wrong IP address)
+  file:
+    path: "/opt/nebula/{{ item }}"
+    state: absent
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  with_items:
+    - "{{ inventory_hostname }}.crt"
+    - "{{ inventory_hostname }}.key"
+  when:
+    - cert_stat.stat.exists
+    - current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string
+
 - name: Ensure a cert/key exists for each node on lighthouse
   command:
     chdir: /opt/nebula
     cmd: ./nebula-cert sign -name "{{ inventory_hostname }}" -ip "{{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
-    creates: "/opt/nebula/{{ inventory_hostname }}.crt"
   delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  when: not cert_stat.stat.exists or current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string
 
 - name: Ensure lighthouse has hosts file entry for node
   lineinfile:
@@ -79,3 +117,4 @@
     minute: "{{ nebula_check_cron_minute | default('*/5') }}"
     job: "/opt/nebula/nebula-check.sh"
   when: nebula_install_check_cron|bool
+
