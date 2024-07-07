@@ -3,7 +3,14 @@
   block:
     - name: Collecting all nebula_internal_ip_addr values
       set_fact:
-        sorted_ips: "{{ hostvars | map('extract', hostvars, ['nebula_internal_ip_addr']) | list | sort }}"
+        sorted_ips: >-
+          {{ hostvars
+             | dict2items
+             | selectattr('value.nebula_internal_ip_addr', 'defined')
+             | map(attribute='value.nebula_internal_ip_addr')
+             | list
+             | sort
+          }}
 
     - name: Initialize duplicated_ips list
       set_fact:
