@@ -125,6 +125,12 @@ nebula_cloudflare_proxied: false
 
 The role creates A records for each Nebula host using your chosen naming convention, pointing to the host's Nebula internal IP. This makes it easy to address Nebula hosts by DNS name from anywhere with access to your DNS.
 
+Key features:
+- Automatically creates DNS records based on inventory hostnames
+- Detects and cleans up old records if IP addresses change
+- Supports both prefix and suffix naming styles
+- Works with the automatic IP assignment system
+
 # Running the Playbook
 ```
 ansible-playbook -i inventory nebula.yml
