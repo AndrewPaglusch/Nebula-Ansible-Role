@@ -29,39 +29,7 @@
     - nebula_cloudflare_integration|bool
     - nebula_dns_affix_position == "prefix"
 
-- name: Find existing DNS records for this host
-  community.general.cloudflare_dns_record_info:
-    zone: "{{ nebula_cloudflare_zone }}"
-    api_token: "{{ nebula_cloudflare_api_token }}"
-    record: "{{ nebula_dns_record }}"
-    type: A
-  register: cloudflare_records
-  delegate_to: localhost
-  become: false
-  when: nebula_cloudflare_integration|bool
-  tags:
-    - nebula_dns
-    - nebula_cloudflare
-
-- name: Delete existing DNS records with different IP values
-  community.general.cloudflare_dns:
-    zone: "{{ nebula_cloudflare_zone }}"
-    api_token: "{{ nebula_cloudflare_api_token }}"
-    record_id: "{{ item.id }}"
-    state: absent
-  delegate_to: localhost
-  become: false
-  loop: "{{ cloudflare_records.result | default([]) }}"
-  when: 
-    - nebula_cloudflare_integration|bool
-    - cloudflare_records.result is defined
-    - item.type == 'A'
-    - item.content != nebula_internal_ip_addr
-  tags:
-    - nebula_dns
-    - nebula_cloudflare
-
-- name: Create/Update Cloudflare DNS A record for Nebula internal IP
+- name: Create/Update Cloudflare DNS A record for Nebula internal IP with solo mode
   community.general.cloudflare_dns:
     zone: "{{ nebula_cloudflare_zone }}"
     api_token: "{{ nebula_cloudflare_api_token }}"
@@ -69,6 +37,7 @@
     record: "{{ nebula_dns_record }}"
     value: "{{ nebula_internal_ip_addr }}"
     state: present
+    solo: true
     proxied: "{{ nebula_cloudflare_proxied|default(false) }}"
     ttl: "{{ nebula_cloudflare_ttl|default(120) }}"
   delegate_to: localhost

@@ -5,6 +5,11 @@
     cmd: ./nebula-cert ca -name "{{ nebula_network_name }}" -duration "{{ nebula_ca_cert_duration }}"
     creates: /opt/nebula/ca.crt
 
+- name: Set lighthouse IP to assigned IP if running with IP assignment
+  ansible.builtin.set_fact:
+    nebula_lighthouse_internal_ip_addr: "{{ nebula_internal_ip_addr }}"
+  when: nebula_internal_ip_addr is defined
+
 - name: Ensure lighthouse cert/key exists
   command:
     chdir: /opt/nebula
