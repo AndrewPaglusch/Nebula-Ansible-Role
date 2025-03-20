@@ -1,4 +1,7 @@
 ---
+- name: Handle Nebula IP assignment
+  include_tasks: ip_assignment.yml
+
 - name: Nebula Install
   block:
     - name: Uninstall Nebula (clean install)
@@ -18,4 +21,10 @@
     - name: Deploy Nebula Node
       include_tasks: node.yml
       when: inventory_hostname not in groups['nebula_lighthouse']
-  when: inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
+
+- name: Configure Cloudflare DNS for Nebula hosts
+  include_tasks: cloudflare_dns.yml
+  when: nebula_cloudflare_integration|bool
+  tags:
+    - nebula_dns
+    - nebula_cloudflare

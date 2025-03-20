@@ -9,6 +9,29 @@ nebula_node_lighthouse_in_hosts_file: true
 nebula_node_use_lighthouse_as_relay: true
 nebula_install_check_cron: true
 
+# IP Assignment Configuration
+nebula_network_prefix: "10.43"
+# Default mapping for Nebula IP assignments if none provided
+nebula_ip_map:
+  nebula_lighthouse: {prefix: "10.43.0", start: 1}
+  webservers: {prefix: "10.43.1", start: 10}
+  databases: {prefix: "10.43.2", start: 10}
+  app_servers: {prefix: "10.43.3", start: 10}
+  monitoring: {prefix: "10.43.4", start: 10}
+  backups: {prefix: "10.43.5", start: 10}
+
+# Cloudflare DNS Integration (disabled by default)
+nebula_cloudflare_integration: false
+# nebula_cloudflare_api_token: ""  # Set in vault files
+# nebula_cloudflare_zone: "example.com"  # Your Cloudflare DNS zone
+
+# DNS naming configuration
+nebula_dns_affix: "neb"  # The text to add to the hostname
+nebula_dns_affix_position: "suffix"  # Options: "prefix", "suffix"
+nebula_dns_affix_separator: "-"  # Separator between hostname and affix
+
+nebula_cloudflare_ttl: 120  # TTL in seconds
+nebula_cloudflare_proxied: false  # Whether to proxy records through Cloudflare
 
 nebula_lighthouse_hostname: lighthouse
 nebula_lighthouse_internal_ip_addr: 192.168.77.1

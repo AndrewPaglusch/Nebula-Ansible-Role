@@ -1,0 +1,47 @@
+---
+# Tasks for creating Cloudflare DNS entries for Nebula hosts
+
+- name: Check if Cloudflare credentials are defined
+  ansible.builtin.assert:
+    that:
+      - nebula_cloudflare_api_token is defined
+      - nebula_cloudflare_zone is defined
+    fail_msg: "Cloudflare API token and zone must be defined for DNS integration"
+    quiet: true
+  when: nebula_cloudflare_integration|bool
+
+- name: Extract hostname without domain for DNS record creation
+  ansible.builtin.set_fact:
+    nebula_hostname_base: "{{ inventory_hostname | regex_replace('\\..*$', '') }}"
+  when: nebula_cloudflare_integration|bool
+
+- name: Create DNS record name with affix as suffix
+  ansible.builtin.set_fact:
+    nebula_dns_record: "{{ nebula_hostname_base }}{{ nebula_dns_affix_separator }}{{ nebula_dns_affix }}"
+  when: 
+    - nebula_cloudflare_integration|bool
+    - nebula_dns_affix_position == "suffix"
+
+- name: Create DNS record name with affix as prefix
+  ansible.builtin.set_fact:
+    nebula_dns_record: "{{ nebula_dns_affix }}{{ nebula_dns_affix_separator }}{{ nebula_hostname_base }}"
+  when: 
+    - nebula_cloudflare_integration|bool
+    - nebula_dns_affix_position == "prefix"
+
+- name: Create/Update Cloudflare DNS A record for Nebula internal IP
+  community.general.cloudflare_dns:
+    zone: "{{ nebula_cloudflare_zone }}"
+    api_token: "{{ nebula_cloudflare_api_token }}"
+    type: A
+    record: "{{ nebula_dns_record }}"
+    value: "{{ nebula_internal_ip_addr }}"
+    state: present
+    proxied: "{{ nebula_cloudflare_proxied|default(false) }}"
+    ttl: "{{ nebula_cloudflare_ttl|default(120) }}"
+  delegate_to: localhost
+  become: false
+  when: nebula_cloudflare_integration|bool
+  tags:
+    - nebula_dns
+    - nebula_cloudflare
