@@ -87,6 +87,22 @@ nebula_ip_map:
 
 You can customize this mapping in your playbook variables. If a host isn't in a mapped group, it will use a fallback hash-based IP in the 10.43.254.x range.
 
+### Handling Hosts in Multiple Groups
+
+If a host belongs to multiple groups defined in `nebula_ip_map`, you can explicitly specify which group to use for IP assignment:
+
+```yaml
+# In host_vars/multi-purpose-server.yml:
+nebula_primary_group_for_ip: "webservers"
+```
+
+```yaml
+# Or in group_vars/webservers.yml to set it for all hosts in the group:
+nebula_primary_group_for_ip: "webservers"
+```
+
+This ensures consistent IP assignment even when hosts belong to multiple groups.
+
 **Note:** More variables can be found in the [role defaults.](defaults/main.yml)
 
 # Cloudflare DNS Integration

@@ -20,6 +20,10 @@ nebula_ip_map:
   monitoring: {prefix: "10.43.4", start: 10}
   backups: {prefix: "10.43.5", start: 10}
 
+# Optional variable to explicitly set which group to use for IP assignment
+# Useful when a host belongs to multiple groups in nebula_ip_map
+# nebula_primary_group_for_ip: "webservers"
+
 # Cloudflare DNS Integration (disabled by default)
 nebula_cloudflare_integration: false
 # nebula_cloudflare_api_token: ""  # Set in vault files

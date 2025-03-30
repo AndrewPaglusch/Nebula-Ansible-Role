@@ -5,10 +5,30 @@
   set_fact:
     nebula_ip_is_explicit: "{{ nebula_internal_ip_addr is defined }}"
 
-- name: Determine host's primary group for IP assignment
+- name: Use explicitly set primary group for IP assignment if defined
+  set_fact:
+    nebula_primary_group: "{{ nebula_primary_group_for_ip }}"
+  when: 
+    - not nebula_ip_is_explicit|bool
+    - nebula_primary_group_for_ip is defined
+    - nebula_primary_group_for_ip in nebula_ip_map
+
+- name: Determine host's primary group for IP assignment (if not explicitly set)
   set_fact:
     nebula_primary_group: "{{ group_names | intersect(nebula_ip_map.keys() | list) | first | default('undefined') }}"
-  when: not nebula_ip_is_explicit|bool
+  when: 
+    - not nebula_ip_is_explicit|bool
+    - nebula_primary_group is not defined
+
+- name: Warn if explicitly set group is invalid
+  ansible.builtin.debug:
+    msg: >
+      WARNING: Host {{ inventory_hostname }} has nebula_primary_group_for_ip set to "{{ nebula_primary_group_for_ip }}" 
+      but this group is not defined in nebula_ip_map. Will attempt to auto-determine group.
+  when: 
+    - not nebula_ip_is_explicit|bool
+    - nebula_primary_group_for_ip is defined
+    - nebula_primary_group_for_ip not in nebula_ip_map
 
 - name: Warn if host not in a mapped group and IP not explicitly set
   ansible.builtin.debug:
@@ -35,4 +55,8 @@
 
 - name: Display assigned Nebula IP
   ansible.builtin.debug:
-    msg: "Host {{ inventory_hostname }} assigned Nebula IP: {{ nebula_internal_ip_addr }} (Method: {{ 'Explicit' if nebula_ip_is_explicit else 'Group-based' if nebula_primary_group != 'undefined' else 'Hash-based' }})"
+    msg: >
+      Host {{ inventory_hostname }} assigned Nebula IP: {{ nebula_internal_ip_addr }}
+      (Method: {{ 'Explicit IP' if nebula_ip_is_explicit else 
+                 'Group-based (' + nebula_primary_group + ')' if nebula_primary_group != 'undefined' else 
+                 'Hash-based' }})

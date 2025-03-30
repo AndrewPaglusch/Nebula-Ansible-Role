@@ -26,4 +26,15 @@
       fail:
         msg: "You have one or more hosts with duplicate IP addresses assigned: {{ duplicated_ips }}"
       when: duplicated_ips | length > 0
+      
+    - name: Validate nebula_primary_group_for_ip if specified
+      ansible.builtin.assert:
+        that: hostvars[item].nebula_primary_group_for_ip in nebula_ip_map
+        fail_msg: >
+          Host {{ item }} has nebula_primary_group_for_ip set to "{{ hostvars[item].nebula_primary_group_for_ip }}"
+          but this group is not defined in nebula_ip_map. Available groups: {{ nebula_ip_map.keys() | list | join(', ') }}
+      loop: "{{ ansible_play_hosts }}"
+      when: 
+        - hostvars[item].nebula_primary_group_for_ip is defined
+        - hostvars[item].nebula_internal_ip_addr is not defined
   run_once: true
