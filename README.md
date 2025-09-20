@@ -33,22 +33,6 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
     nebula_outbound_rules:
       - { port: "any", proto: "any", host: "any" }
 
-    # Example lighthouse remote_allow_list configuration
-    # Controls IP ranges that this node will consider when handshaking
-    nebula_lighthouse_remote_allow_list:
-      '172.16.0.0/12': false  # Block this subnet
-      '0.0.0.0/0': true       # Allow all other IPs
-      '10.0.0.0/8': false     # Block private range
-      '10.42.42.0/24': true   # Allow specific subnet
-
-    # Example lighthouse local_allow_list configuration
-    # Filters which local IP addresses are advertised to the lighthouses
-    nebula_lighthouse_local_allow_list:
-      interfaces:
-        tun0: false           # Block tun0 interface
-        'docker.*': false     # Block all docker interfaces
-      '10.0.0.0/8': true      # Only advertise this subnet
-
   roles:
     - role: nebula
 ```
