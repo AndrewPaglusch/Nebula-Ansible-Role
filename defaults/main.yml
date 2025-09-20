@@ -43,3 +43,8 @@ nebula_inbound_rules:
 nebula_outbound_rules:
   - { port: "any", proto: "any", host: "any" }
 
+nebula_sshd_enabled: false
+nebula_sshd_listen: "127.0.0.1:2222"
+nebula_sshd_authorized_users: []
+nebula_sshd_trusted_cas: []
+
