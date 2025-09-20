@@ -28,9 +28,34 @@ lighthouse:
     # format:
     #
     # - "192.168.77.1"
-  {% if nebula_lighthouse_extra_config|length > 0 %}
-  {{- nebula_lighthouse_extra_config | to_nice_yaml | indent(2) }}
+
+{% if nebula_lighthouse_remote_allow_list|length > 0 %}
+  # remote_allow_list controls IP ranges that this node will consider when handshaking
+  remote_allow_list:
+  {% for cidr, allow in nebula_lighthouse_remote_allow_list.items() %}
+    '{{ cidr }}': {{ allow | lower }}
+  {% endfor %}
+{% endif %}
+
+{% if nebula_lighthouse_local_allow_list|length > 0 %}
+  # local_allow_list filters which local IP addresses we advertise to the lighthouses
+  local_allow_list:
+  {% if nebula_lighthouse_local_allow_list.interfaces is defined %}
+    interfaces:
+    {% for interface, allow in nebula_lighthouse_local_allow_list.interfaces.items() %}
+      '{{ interface }}': {{ allow | lower }}
+    {% endfor %}
   {% endif %}
+  {% for key, value in nebula_lighthouse_local_allow_list.items() %}
+  {% if key != 'interfaces' %}
+    '{{ key }}': {{ value | lower }}
+  {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% if nebula_lighthouse_extra_config|length > 0 %}
+  {{- nebula_lighthouse_extra_config | to_nice_yaml | indent(2) }}
+{% endif %}
 
 listen:
   # 0.0.0.0 means "all interfaces," which is probably what you want
