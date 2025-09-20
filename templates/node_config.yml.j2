@@ -76,6 +76,26 @@ stats:
   interval: {{ nebula_metrics_prometheus_interval }}
 {% endif %}
 
+{% if nebula_sshd_enabled %}
+sshd:
+  enabled: {{ nebula_sshd_enabled }}
+  listen: {{ nebula_sshd_listen }}
+  host_key: /opt/nebula/ssh_host_ed25519_key
+{% if nebula_sshd_authorized_users %}
+  authorized_users:
+{% for sshd_user in nebula_sshd_authorized_users %}
+    - user: {{ sshd_user.user }}
+      keys:
+{% for ssh_key in sshd_user.get('keys', []) %}
+        - "{{ ssh_key }}"
+{% endfor %}
+{% for file_key in nebula_sshd_key_registry.get(sshd_user.user, []) %}
+        - "{{ file_key }}"
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
 # you NEED this firewall section.
 #
 # Nebula has its own firewall in addition to anything

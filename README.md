@@ -52,6 +52,31 @@ pbx01.company.com nebula_internal_ip_addr=10.43.0.6
 
 **Note:** More variables can be found in the [role defaults.](defaults/main.yml)
 
+# SSH Debug Console
+
+This role supports Nebula's built-in SSH debug console feature. To enable it, set:
+
+```yaml
+nebula_sshd_enabled: true
+nebula_sshd_listen: "127.0.0.1:2222"  # Optional, defaults to 127.0.0.1:2222
+nebula_sshd_authorized_users:
+  - user: admin
+    keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... admin@host"
+    key_files:
+      - "/path/to/admin.pub"
+  - user: developer
+    key_files:
+      - "~/.ssh/developer_key.pub"
+```
+
+You can specify SSH keys either:
+- **Inline** using the `keys` field with the full public key string
+- **From files** using the `key_files` field with paths to public key files
+- **Both** in the same user entry
+
+The role automatically generates an ED25519 SSH host key at `/opt/nebula/ssh_host_ed25519_key` when the SSH daemon is enabled.
+
 # Running the Playbook
 ```
 ansible-playbook -i inventory nebula.yml

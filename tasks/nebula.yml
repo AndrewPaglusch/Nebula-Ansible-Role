@@ -40,3 +40,33 @@
   with_items:
     - nebula
     - nebula-cert
+
+- name: Generate SSH host key for Nebula debug console
+  openssh_keypair:
+    path: /opt/nebula/ssh_host_ed25519_key
+    type: ed25519
+    owner: root
+    group: root
+    mode: '0600'
+  when: nebula_sshd_enabled
+
+- name: Read SSH key files and build registry
+  block:
+    - name: Read all SSH key files
+      slurp:
+        src: "{{ item.1 }}"
+      register: ssh_key_files
+      failed_when: false
+      loop: "{{ nebula_sshd_authorized_users | subelements('key_files', skip_missing=True) }}"
+
+    - name: Build SSH key registry by username
+      set_fact:
+        nebula_sshd_key_registry: >-
+          {{ nebula_sshd_key_registry | default({}) | combine({
+            result.item.0.user: (nebula_sshd_key_registry | default({})).get(result.item.0.user, []) +
+            [result.content | b64decode | trim]
+          }) }}
+      loop: "{{ ssh_key_files.results | selectattr('content', 'defined') | list }}"
+      loop_control:
+        loop_var: result
+  when: nebula_sshd_enabled
