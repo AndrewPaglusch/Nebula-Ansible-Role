@@ -17,6 +17,19 @@ nebula_lighthouse_public_port: 4242
 nebula_lighthouse_is_relay: true
 nebula_lighthouse_extra_config: {}
 
+# Lighthouse remote_allow_list configuration
+# Controls IP ranges that this node will consider when handshaking to another node
+# Format: CIDR: boolean (true to allow, false to deny)
+# If all rules are "allow", default will be "deny", and vice-versa
+# If both "allow" and "deny" rules are present, you MUST set a rule for "0.0.0.0/0" as default
+nebula_lighthouse_remote_allow_list: {}
+
+# Lighthouse local_allow_list configuration
+# Filters which local IP addresses are advertised to the lighthouses
+# Can specify interfaces map of regular expressions to match against interface names
+# Format: CIDR: boolean or interfaces: { interface_regex: boolean }
+nebula_lighthouse_local_allow_list: {}
+
 nebula_metrics_prometheus_enabled: false
 nebula_metrics_prometheus_listen: "127.0.0.1:4244"
 nebula_metrics_prometheus_path: "/metrics"
