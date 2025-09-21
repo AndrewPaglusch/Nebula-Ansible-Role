@@ -53,9 +53,9 @@ lighthouse:
   {% endfor %}
 {% endif %}
 
-{% if nebula_lighthouse_extra_config|length > 0 %}
-  {{- nebula_lighthouse_extra_config | to_nice_yaml | indent(2) }}
-{% endif %}
+  {% if nebula_lighthouse_extra_config|length > 0 %}
+    {{- nebula_lighthouse_extra_config | to_nice_yaml | indent(2) }}
+  {% endif %}
 
 listen:
   # 0.0.0.0 means "all interfaces," which is probably what you want
