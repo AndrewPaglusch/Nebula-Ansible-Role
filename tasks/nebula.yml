@@ -25,7 +25,7 @@
 
 - name: Download & Extract Nebula
   unarchive:
-    src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_architecture] }}.tar.gz"
+    src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_facts.architecture] }}.tar.gz"
     dest: "/opt/nebula"
     remote_src: yes
   when: (installed_nebula_version|default(nebula_version) != nebula_version) or (not installed_nebula_stats.stat.exists)
