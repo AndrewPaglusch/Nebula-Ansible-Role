@@ -1,0 +1,26 @@
+---
+# Normalize: if nebula_lighthouses list is empty, build it from the legacy
+# single-lighthouse variables so the rest of the role only ever deals with the list.
+_nebula_lighthouses_computed: >-
+  {{
+    nebula_lighthouses
+    if nebula_lighthouses | length > 0
+    else [
+      {
+        'hostname':      nebula_lighthouse_hostname,
+        'internal_ip':   nebula_lighthouse_internal_ip_addr,
+        'public_hostname': nebula_lighthouse_public_hostname,
+        'public_port':   nebula_lighthouse_public_port,
+        'is_relay':      nebula_lighthouse_is_relay
+      }
+    ]
+  }}
+
+# The primary lighthouse is always index [0] — it holds the CA key.
+_nebula_primary_lighthouse: "{{ _nebula_lighthouses_computed[0] }}"
+
+# CPU architectures map (unchanged from original)
+nebula_architectures:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: arm

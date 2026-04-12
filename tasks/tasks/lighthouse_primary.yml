@@ -1,0 +1,61 @@
+---
+# Runs only on groups['nebula_lighthouse'][0]
+# This host owns the CA key and signs all certs.
+
+- name: Ensure CA cert/key exists
+  command:
+    chdir: /opt/nebula
+    cmd: >-
+      ./nebula-cert ca
+      -name "{{ nebula_network_name }}"
+      -duration "{{ nebula_ca_cert_duration }}"
+    creates: /opt/nebula/ca.crt
+
+- name: Ensure primary lighthouse cert/key exists
+  command:
+    chdir: /opt/nebula
+    cmd: >-
+      ./nebula-cert sign
+      -name "{{ _nebula_primary_lighthouse.hostname }}"
+      -ip "{{ _nebula_primary_lighthouse.internal_ip }}/{{ nebula_network_cidr }}"
+      -duration "{{ nebula_client_cert_duration }}"
+    creates: "/opt/nebula/{{ _nebula_primary_lighthouse.hostname }}.crt"
+
+- name: Ensure cert/key exists for each secondary lighthouse
+  command:
+    chdir: /opt/nebula
+    cmd: >-
+      ./nebula-cert sign
+      -name "{{ item.hostname }}"
+      -ip "{{ item.internal_ip }}/{{ nebula_network_cidr }}"
+      -duration "{{ nebula_client_cert_duration }}"
+    creates: "/opt/nebula/{{ item.hostname }}.crt"
+  loop: "{{ _nebula_lighthouses_computed[1:] }}"
+  when: _nebula_lighthouses_computed | length > 1
+
+- name: Ensure primary lighthouse is configured
+  template:
+    src: lighthouse_config.yml.j2
+    dest: /opt/nebula/config.yml
+    owner: root
+    group: root
+    mode: '0400'
+  notify: restart nebula
+  vars:
+    _lh: "{{ _nebula_primary_lighthouse }}"
+
+- name: Ensure primary lighthouse service exists
+  template:
+    src: lighthouse.service.j2
+    dest: /etc/systemd/system/lighthouse.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure primary lighthouse service is enabled and running
+  systemd:
+    name: lighthouse
+    daemon_reload: yes
+    enabled: yes
+    masked: no
+    state: started

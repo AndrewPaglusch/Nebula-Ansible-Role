@@ -1,0 +1,99 @@
+pki:
+  ca: /opt/nebula/ca.crt
+  cert: /opt/nebula/{{ inventory_hostname }}.crt
+  key: /opt/nebula/{{ inventory_hostname }}.key
+
+static_host_map:
+{% for lh in _nebula_lighthouses_computed %}
+  "{{ lh.internal_ip }}": ["{{ lh.public_hostname }}:{{ lh.public_port }}"]
+{% endfor %}
+
+lighthouse:
+  interval: 60
+  am_lighthouse: false
+  hosts:
+{% for lh in _nebula_lighthouses_computed %}
+    - "{{ lh.internal_ip }}"
+{% endfor %}
+
+listen:
+  host: 0.0.0.0
+  port: 4242
+
+punchy: true
+
+relay:
+  am_relay: false
+  use_relays: {{ nebula_node_use_lighthouse_as_relay }}
+  relays:
+{% for lh in _nebula_lighthouses_computed %}
+{% if lh.is_relay | default(true) %}
+    - {{ lh.internal_ip }}
+{% endif %}
+{% endfor %}
+
+punch_back: true
+
+tun:
+  dev: neb0
+  drop_local_broadcast: false
+  drop_multicast: false
+  tx_queue: 500
+  mtu: 1300
+  routes:
+
+logging:
+  level: info
+  format: text
+
+{% if nebula_metrics_prometheus_enabled %}
+stats:
+  type: prometheus
+  listen: {{ nebula_metrics_prometheus_listen }}
+  path: {{ nebula_metrics_prometheus_path }}
+  namespace: {{ nebula_metrics_prometheus_namespace }}
+  interval: {{ nebula_metrics_prometheus_interval }}
+{% endif %}
+
+{% if nebula_sshd_enabled %}
+sshd:
+  enabled: {{ nebula_sshd_enabled }}
+  listen: {{ nebula_sshd_listen }}
+  host_key: /opt/nebula/ssh_host_ed25519_key
+{% if nebula_sshd_authorized_users %}
+  authorized_users:
+{% for sshd_user in nebula_sshd_authorized_users %}
+    - user: {{ sshd_user.user }}
+      keys:
+{% for ssh_key in sshd_user.get('keys', []) %}
+        - "{{ ssh_key }}"
+{% endfor %}
+{% for file_key in nebula_sshd_key_registry.get(sshd_user.user, []) %}
+        - "{{ file_key }}"
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+firewall:
+  outbound_action: {{ nebula_firewall_block_action }}
+  inbound_action: {{ nebula_firewall_block_action }}
+  conntrack:
+    tcp_timeout: 120h
+    udp_timeout: 3m
+    default_timeout: 10m
+    max_connections: 100000
+
+  outbound:
+{% for rule in nebula_outbound_rules %}
+    - port: {{ rule.port }}
+      proto: {{ rule.proto }}
+      host: {{ rule.host }}
+{% endfor %}
+
+  inbound:
+{% for rule in nebula_inbound_rules %}
+    - port: {{ rule.port }}
+      proto: {{ rule.proto }}
+      host: {{ rule.host }}
+{% endfor %}

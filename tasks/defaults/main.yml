@@ -1,0 +1,71 @@
+---
+nebula_version: 1.8.0
+nebula_network_name: "My Nebula Mesh Network"
+nebula_network_cidr: 24
+nebula_ca_cert_duration: "87600h0m0s" #10 years
+nebula_client_cert_duration: "43800h0m0s" #5 years
+nebula_clean_install: false
+nebula_lighthouse_build_hosts_file: true
+nebula_node_lighthouse_in_hosts_file: true
+nebula_node_use_lighthouse_as_relay: true
+nebula_install_check_cron: true
+
+# Multi-lighthouse configuration
+# Each lighthouse needs: hostname, internal_ip, public_hostname, public_port
+# The FIRST lighthouse in the list is the "primary" lighthouse:
+#   - It stores the CA key and signs all certificates
+#   - All other lighthouses fetch their certs from it
+#
+# Example:
+# nebula_lighthouses:
+#   - hostname: lighthouse1
+#     internal_ip: 192.168.77.1
+#     public_hostname: lh1.example.com
+#     public_port: 4242
+#     is_relay: true
+#   - hostname: lighthouse2
+#     internal_ip: 192.168.77.2
+#     public_hostname: lh2.example.com
+#     public_port: 4242
+#     is_relay: true
+nebula_lighthouses: []
+
+# Legacy single-lighthouse variables (still supported for backwards compatibility)
+# If nebula_lighthouses is empty, these are used to build a single-lighthouse setup.
+nebula_lighthouse_hostname: lighthouse
+nebula_lighthouse_internal_ip_addr: 192.168.77.1
+nebula_lighthouse_public_hostname: my-nebula-server.com
+nebula_lighthouse_public_port: 4242
+nebula_lighthouse_is_relay: true
+nebula_lighthouse_extra_config: {}
+
+# Lighthouse remote_allow_list configuration
+# Controls IP ranges that this node will consider when handshaking to another node
+# Format: CIDR: boolean (true to allow, false to deny)
+# If all rules are "allow", default will be "deny", and vice-versa
+# If both "allow" and "deny" rules are present, you MUST set a rule for "0.0.0.0/0" as default
+nebula_lighthouse_remote_allow_list: {}
+
+# Lighthouse local_allow_list configuration
+# Filters which local IP addresses are advertised to the lighthouses
+# Can specify interfaces map of regular expressions to match against interface names
+# Format: CIDR: boolean or interfaces: { interface_regex: boolean }
+nebula_lighthouse_local_allow_list: {}
+
+nebula_metrics_prometheus_enabled: false
+nebula_metrics_prometheus_listen: "127.0.0.1:4244"
+nebula_metrics_prometheus_path: "/metrics"
+nebula_metrics_prometheus_namespace: nebula
+nebula_metrics_prometheus_interval: 10s
+
+nebula_firewall_block_action: drop
+
+nebula_inbound_rules:
+  - { port: "any", proto: "any", host: "any" }
+nebula_outbound_rules:
+  - { port: "any", proto: "any", host: "any" }
+
+nebula_sshd_enabled: false
+nebula_sshd_listen: "127.0.0.1:2222"
+nebula_sshd_authorized_users: []
+nebula_sshd_trusted_cas: []
