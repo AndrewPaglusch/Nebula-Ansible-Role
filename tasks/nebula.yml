@@ -1,8 +1,14 @@
+---
+- name: Ensure cron is installed
+  package:
+    name: "{{ 'cron' if ansible_facts.os_family == 'Debian' else 'cronie' }}"
+    state: present
+
 - name: Ensure /opt/nebula directory exists
   file:
     path: /opt/nebula
     state: directory
-    mode: '0700'
+    mode: '0755'
     owner: root
     group: root
 
@@ -23,13 +29,22 @@
     installed_nebula_version: "{{ installed_nebula_version_out.stdout.split(' ')[1] }}"
   when: installed_nebula_stats.stat.exists
 
-- name: Download & Extract Nebula
+# ✅ FIX START
+- name: Download Nebula archive
+  get_url:
+    url: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_facts.architecture] }}.tar.gz"
+    dest: "/tmp/nebula-{{ nebula_version }}.tar.gz"
+    mode: '0644'
+  when: (installed_nebula_version | default(nebula_version) != nebula_version) or (not installed_nebula_stats.stat.exists)
+
+- name: Extract Nebula
   unarchive:
-    src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_facts.architecture] }}.tar.gz"
+    src: "/tmp/nebula-{{ nebula_version }}.tar.gz"
     dest: "/opt/nebula"
     remote_src: yes
-  when: (installed_nebula_version|default(nebula_version) != nebula_version) or (not installed_nebula_stats.stat.exists)
+  when: (installed_nebula_version | default(nebula_version) != nebula_version) or (not installed_nebula_stats.stat.exists)
   notify: restart nebula
+# ✅ FIX END
 
 - name: Ensure Nebula binaries permissions are correct
   file:
@@ -37,7 +52,7 @@
     owner: root
     group: root
     mode: '0700'
-  with_items:
+  loop:
     - nebula
     - nebula-cert
 
@@ -53,7 +68,7 @@
     owner: root
     group: root
     mode: '0600'
-  with_items:
+  loop:
     - /opt/nebula/ssh_host_ed25519_key
     - /opt/nebula/ssh_host_ed25519_key.pub
   when: nebula_sshd_enabled

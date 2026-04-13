@@ -11,22 +11,32 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
 # Example Playbook
 ```
 ---
-- name: Deploy Nebula
+- name: Deploy Nebula (multi-lighthouse)
   hosts: all
   gather_facts: yes
   user: ansible
   become: yes
   vars:
     nebula_version: 1.8.0
-    nebula_network_name: "Company Nebula Mgmt Net"
+    nebula_network_name: "My Company Nebula"
     nebula_network_cidr: 16
 
-    nebula_lighthouse_internal_ip_addr: 10.43.0.1
-    nebula_lighthouse_public_hostname: lighthouse.company.com
-    nebula_lighthouse_public_port: 4242
+    # --- Multi-Lighthouse Configuration ---
+    # The FIRST entry is the primary (hosts the CA key).
+    # All additional entries are secondaries.
+    nebula_lighthouses:
+      - hostname: lighthouse1
+        internal_ip: 10.43.0.1
+        public_hostname: lh1.example.com
+        public_port: 4242
+        is_relay: true
+      - hostname: lighthouse2
+        internal_ip: 10.43.0.2
+        public_hostname: lh2.example.com
+        public_port: 4242
+        is_relay: true
 
-    nebula_firewall_drop_action: reject
-
+    nebula_firewall_block_action: reject
     nebula_inbound_rules:
       - { port: "any", proto: "icmp", host: "any" }
       - { port: 22, proto: "tcp", host: "any" }
@@ -40,14 +50,13 @@ You can read more about Nebula [on the official repo](https://github.com/slackhq
 # Example Inventory
 ```
 [nebula_lighthouse]
-lighthouse01.company.com
+lighthouse1.example.com
+lighthouse2.example.com
 
 [servers]
-web01.company.com nebula_internal_ip_addr=10.43.0.2
-docker01.company.com nebula_internal_ip_addr=10.43.0.3
-zabbix01.company.com nebula_internal_ip_addr=10.43.0.4
-backup01.company.com nebula_internal_ip_addr=10.43.0.5
-pbx01.company.com nebula_internal_ip_addr=10.43.0.6
+web01.example.com nebula_internal_ip_addr=10.43.0.10
+docker01.example.com nebula_internal_ip_addr=10.43.0.11
+db01.example.com nebula_internal_ip_addr=10.43.0.12
 ```
 
 **Note:** More variables can be found in the [role defaults.](defaults/main.yml)

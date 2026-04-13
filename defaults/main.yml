@@ -1,3 +1,4 @@
+---
 nebula_version: 1.8.0
 nebula_network_name: "My Nebula Mesh Network"
 nebula_network_cidr: 24
@@ -9,7 +10,28 @@ nebula_node_lighthouse_in_hosts_file: true
 nebula_node_use_lighthouse_as_relay: true
 nebula_install_check_cron: true
 
+# Multi-lighthouse configuration
+# Each lighthouse needs: hostname, internal_ip, public_hostname, public_port
+# The FIRST lighthouse in the list is the "primary" lighthouse:
+#   - It stores the CA key and signs all certificates
+#   - All other lighthouses fetch their certs from it
+#
+# Example:
+# nebula_lighthouses:
+#   - hostname: lighthouse1
+#     internal_ip: 192.168.77.1
+#     public_hostname: lh1.example.com
+#     public_port: 4242
+#     is_relay: true
+#   - hostname: lighthouse2
+#     internal_ip: 192.168.77.2
+#     public_hostname: lh2.example.com
+#     public_port: 4242
+#     is_relay: true
+nebula_lighthouses: []
 
+# Legacy single-lighthouse variables (still supported for backwards compatibility)
+# If nebula_lighthouses is empty, these are used to build a single-lighthouse setup.
 nebula_lighthouse_hostname: lighthouse
 nebula_lighthouse_internal_ip_addr: 192.168.77.1
 nebula_lighthouse_public_hostname: my-nebula-server.com
@@ -47,4 +69,3 @@ nebula_sshd_enabled: false
 nebula_sshd_listen: "127.0.0.1:2222"
 nebula_sshd_authorized_users: []
 nebula_sshd_trusted_cas: []
-

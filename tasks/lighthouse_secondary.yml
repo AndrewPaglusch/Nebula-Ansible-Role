@@ -1,0 +1,61 @@
+---
+# Runs on all nebula_lighthouse hosts except the primary ([0]).
+# Fetches cert + key from the primary lighthouse and deploys config.
+
+- name: Determine this lighthouse's config entry
+  set_fact:
+    _this_lh: >-
+      {{
+        _nebula_lighthouses_computed
+        | selectattr('hostname', 'equalto', inventory_hostname)
+        | list
+        | first
+      }}
+
+- name: Read cert/key/ca from primary lighthouse for this secondary
+  slurp:
+    src: "/opt/nebula/{{ item }}"
+  register: _lh_secondary_files
+  delegate_to: "{{ groups['nebula_lighthouse'][0] }}"
+  loop:
+    - "{{ _this_lh.hostname }}.crt"
+    - "{{ _this_lh.hostname }}.key"
+    - ca.crt
+
+- name: Ensure cert, key, CA files are present on this secondary lighthouse
+  copy:
+    dest: "/opt/nebula/{{ item['item'] }}"
+    content: "{{ item['content'] | b64decode }}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop: "{{ _lh_secondary_files.results }}"
+  loop_control:
+    label: "{{ item['item'] }}"
+
+- name: Ensure secondary lighthouse is configured
+  template:
+    src: lighthouse_config.yml.j2
+    dest: /opt/nebula/config.yml
+    owner: root
+    group: root
+    mode: '0400'
+  notify: restart nebula
+  vars:
+    _lh: "{{ _this_lh }}"
+
+- name: Ensure secondary lighthouse service exists
+  template:
+    src: lighthouse.service.j2
+    dest: /etc/systemd/system/lighthouse.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure secondary lighthouse service is enabled and running
+  systemd:
+    name: lighthouse
+    daemon_reload: yes
+    enabled: yes
+    masked: no
+    state: started

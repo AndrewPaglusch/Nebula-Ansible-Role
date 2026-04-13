@@ -3,19 +3,26 @@
   block:
     - name: Uninstall Nebula (clean install)
       include_tasks: uninstall.yml
-      when: nebula_clean_install|bool
+      when: nebula_clean_install | bool
 
     - name: Preflight checks
       include_tasks: preflight.yml
 
-    - name: Install Nebula on all hosts 
+    - name: Install Nebula on all hosts
       include_tasks: nebula.yml
-    
-    - name: Deploy Lighthouse
-      include_tasks: lighthouse.yml
-      when: inventory_hostname in groups['nebula_lighthouse']
-    
+
+    - name: Deploy Primary Lighthouse (CA + cert signing)
+      include_tasks: lighthouse_primary.yml
+      when: inventory_hostname == groups['nebula_lighthouse'][0]
+
+    - name: Deploy Secondary Lighthouses
+      include_tasks: lighthouse_secondary.yml
+      when:
+        - inventory_hostname in groups['nebula_lighthouse']
+        - inventory_hostname != groups['nebula_lighthouse'][0]
+
     - name: Deploy Nebula Node
       include_tasks: node.yml
-      when: inventory_hostname not in groups['nebula_lighthouse']
-  when: inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
+      when:
+        - inventory_hostname not in groups['nebula_lighthouse']
+        - nebula_internal_ip_addr is defined
