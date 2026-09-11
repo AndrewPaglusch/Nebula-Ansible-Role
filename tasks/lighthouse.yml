@@ -1,20 +1,20 @@
 ---
 - name: Ensure CA cert/key exists
   command:
-    chdir: /opt/nebula
+    chdir: "{{ nebula_config_dir }}"
     cmd: ./nebula-cert ca -name "{{ nebula_network_name }}" -duration "{{ nebula_ca_cert_duration }}"
-    creates: /opt/nebula/ca.crt
+    creates: "{{ nebula_config_dir }}/ca.crt"
 
 - name: Ensure lighthouse cert/key exists
   command:
-    chdir: /opt/nebula
+    chdir: "{{ nebula_config_dir }}"
     cmd: ./nebula-cert sign -name "{{ nebula_lighthouse_hostname }}" -ip "{{ nebula_lighthouse_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
-    creates: "/opt/nebula/{{ nebula_lighthouse_hostname }}.crt"
+    creates: "{{ nebula_config_dir }}/{{ nebula_lighthouse_hostname }}.crt"
 
 - name: Ensure lighthouse is configured
   template:
     src: lighthouse_config.yml.j2 
-    dest: /opt/nebula/config.yml
+    dest: "{{ nebula_config_dir }}/config.yml"
     owner: root
     group: root
     mode: '0400'

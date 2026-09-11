@@ -2,9 +2,9 @@ pki:
   # every node needs a copy of the CA certificate,
   # and its own certificate and key, ONLY.
   #
-  ca: /opt/nebula/ca.crt
-  cert: /opt/nebula/{{ inventory_hostname }}.crt
-  key: /opt/nebula/{{ inventory_hostname }}.key
+  ca: {{ nebula_config_dir }}/ca.crt
+  cert: {{ nebula_config_dir }}/{{ inventory_hostname }}.crt
+  key: {{ nebula_config_dir }}/{{ inventory_hostname }}.key
 
 static_host_map:
  # how to find one or more lighthouse nodes
@@ -80,7 +80,7 @@ stats:
 sshd:
   enabled: {{ nebula_sshd_enabled }}
   listen: {{ nebula_sshd_listen }}
-  host_key: /opt/nebula/ssh_host_ed25519_key
+  host_key: {{ nebula_config_dir }}/ssh_host_ed25519_key
 {% if nebula_sshd_authorized_users %}
   authorized_users:
 {% for sshd_user in nebula_sshd_authorized_users %}

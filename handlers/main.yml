@@ -2,12 +2,30 @@
   systemd:
     name: nebula
     state: restarted
-  when: inventory_hostname not in groups['nebula_lighthouse']
+  when:
+    - inventory_hostname not in groups['nebula_lighthouse']
+    - ansible_facts['os_family'] != 'Windows'
   listen: "restart nebula"
 
 - name: Restart Lighthouse
   systemd:
     name: lighthouse
     state: restarted
-  when: inventory_hostname in groups['nebula_lighthouse']
+  when:
+    - inventory_hostname in groups['nebula_lighthouse']
+    - ansible_facts['os_family'] != 'Windows'
+  listen: "restart nebula"
+
+# Windows nodes are managed over Nebula itself, and OpenSSH kills processes spawned by a session when it ends,
+# so the restart runs from a scheduled task and the connection is re-established afterwards
+- name: Restart Nebula (Windows)
+  ansible.windows.win_shell: Start-ScheduledTask -TaskName 'Ansible - Restart Nebula'
+  when: ansible_facts['os_family'] == 'Windows'
+  listen: "restart nebula"
+
+- name: Wait for Nebula to come back (Windows)
+  ansible.builtin.wait_for_connection:
+    delay: 10
+    timeout: 180
+  when: ansible_facts['os_family'] == 'Windows'
   listen: "restart nebula"

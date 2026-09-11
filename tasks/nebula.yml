@@ -1,6 +1,6 @@
-- name: Ensure /opt/nebula directory exists
+- name: Ensure Nebula directory exists
   file:
-    path: /opt/nebula
+    path: "{{ nebula_config_dir }}"
     state: directory
     mode: '0700'
     owner: root
@@ -8,14 +8,15 @@
 
 - name: Check for existing Nebula install
   stat:
-    path: '/opt/nebula/nebula'
+    path: '{{ nebula_config_dir }}/nebula'
   register: installed_nebula_stats
 
 - name: Get Nebula version (if installed)
-  command: "/opt/nebula/nebula -version"
+  command: "{{ nebula_config_dir }}/nebula -version"
   register: installed_nebula_version_out
   changed_when: False
   failed_when: False
+  check_mode: False
   when: installed_nebula_stats.stat.exists
 
 - name: Extract Nebula version from command output
@@ -26,14 +27,14 @@
 - name: Download & Extract Nebula
   unarchive:
     src: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-linux-{{ nebula_architectures[ansible_facts.architecture] }}.tar.gz"
-    dest: "/opt/nebula"
+    dest: "{{ nebula_config_dir }}"
     remote_src: yes
   when: (installed_nebula_version|default(nebula_version) != nebula_version) or (not installed_nebula_stats.stat.exists)
   notify: restart nebula
 
 - name: Ensure Nebula binaries permissions are correct
   file:
-    path: "/opt/nebula/{{ item }}"
+    path: "{{ nebula_config_dir }}/{{ item }}"
     owner: root
     group: root
     mode: '0700'
@@ -42,9 +43,9 @@
     - nebula-cert
 
 - name: Generate SSH host key for Nebula debug console
-  command: ssh-keygen -t ed25519 -f /opt/nebula/ssh_host_ed25519_key -N ""
+  command: ssh-keygen -t ed25519 -f "{{ nebula_config_dir }}/ssh_host_ed25519_key" -N ""
   args:
-    creates: /opt/nebula/ssh_host_ed25519_key
+    creates: "{{ nebula_config_dir }}/ssh_host_ed25519_key"
   when: nebula_sshd_enabled
 
 - name: Set SSH host key permissions
@@ -54,8 +55,8 @@
     group: root
     mode: '0600'
   with_items:
-    - /opt/nebula/ssh_host_ed25519_key
-    - /opt/nebula/ssh_host_ed25519_key.pub
+    - "{{ nebula_config_dir }}/ssh_host_ed25519_key"
+    - "{{ nebula_config_dir }}/ssh_host_ed25519_key.pub"
   when: nebula_sshd_enabled
 
 - name: Read SSH key files and build registry
