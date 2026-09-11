@@ -48,3 +48,6 @@ nebula_sshd_listen: "127.0.0.1:2222"
 nebula_sshd_authorized_users: []
 nebula_sshd_trusted_cas: []
 
+
+nebula_config_dir: /opt/nebula
+nebula_windows_install_dir: 'C:\Program Files\Nebula'

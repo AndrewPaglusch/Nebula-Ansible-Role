@@ -1,0 +1,68 @@
+- name: Check if node certificate exists on lighthouse
+  stat:
+    path: "{{ nebula_config_dir }}/{{ inventory_hostname }}.crt"
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  become: true
+  register: cert_stat
+
+- name: Get information about existing certificate (if it exists)
+  command: "{{ nebula_config_dir }}/nebula-cert print -json -path {{ nebula_config_dir }}/{{ inventory_hostname }}.crt"
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  become: true
+  changed_when: false
+  check_mode: false
+  when: cert_stat.stat.exists
+  register: current_cert_json
+  ignore_errors: yes
+
+- name: Parse the IP address from the certificate details (if it exists)
+  set_fact:
+    current_cert_ip: "{{ current_cert_json.stdout | from_json | json_query('details.ips[0]') }}"
+  when:
+    - cert_stat.stat.exists
+    - current_cert_json.stdout != ""
+
+- name: Print IP address from cert (if one exists)
+  debug:
+    msg: "IP Address in Cert: {{ current_cert_ip }}, Expected IP Address: {{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}"
+  when: cert_stat.stat.exists
+
+- name: Delete invalid node certificate and key from lighthouse (wrong IP address)
+  file:
+    path: "{{ nebula_config_dir }}/{{ item }}"
+    state: absent
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  become: true
+  with_items:
+    - "{{ inventory_hostname }}.crt"
+    - "{{ inventory_hostname }}.key"
+  when:
+    - cert_stat.stat.exists
+    - current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string
+
+- name: Ensure a cert/key exists for each node on lighthouse
+  command:
+    chdir: "{{ nebula_config_dir }}"
+    cmd: ./nebula-cert sign -name "{{ inventory_hostname }}" -ip "{{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  become: true
+  when: not cert_stat.stat.exists or current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string
+
+- name: Ensure lighthouse has hosts file entry for node
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ nebula_internal_ip_addr }} {{ inventory_hostname }}.neb"
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  become: true
+  when: nebula_lighthouse_build_hosts_file
+
+- name: Read cert/key from lighthouse
+  slurp:
+    src: "{{ nebula_config_dir }}/{{ item }}"
+  register: lighthouse_files
+  delegate_to: "{{ groups.nebula_lighthouse[0] }}"
+  become: true
+  with_items: 
+    - "{{ inventory_hostname }}.crt"
+    - "{{ inventory_hostname }}.key"
+    - ca.crt

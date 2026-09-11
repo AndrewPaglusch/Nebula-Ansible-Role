@@ -1,0 +1,143 @@
+- name: Ensure Nebula install directory exists
+  ansible.windows.win_file:
+    path: "{{ nebula_windows_install_dir }}"
+    state: directory
+
+- name: Check for existing Nebula install
+  ansible.windows.win_stat:
+    path: "{{ nebula_windows_install_dir }}\\nebula.exe"
+  register: installed_nebula_stats
+
+- name: Get Nebula version (if installed)
+  ansible.windows.win_command:
+    cmd: '"{{ nebula_windows_install_dir }}\nebula.exe" -version'
+  register: installed_nebula_version_out
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: installed_nebula_stats.stat.exists
+
+- name: Extract Nebula version from command output
+  set_fact:
+    installed_nebula_version: "{{ (installed_nebula_version_out.stdout | trim).split(' ') | last }}"
+  when: installed_nebula_stats.stat.exists
+
+- name: Decide whether Nebula needs (re)installing
+  set_fact:
+    nebula_windows_needs_install: "{{ (not installed_nebula_stats.stat.exists) or (installed_nebula_version | default('') != nebula_version) }}"
+
+- name: Check for Nebula service
+  ansible.windows.win_service_info:
+    name: Nebula
+  register: nebula_service_info
+
+- name: Install or upgrade Nebula
+  when: nebula_windows_needs_install | bool
+  block:
+    - name: Stop Nebula service before replacing binaries
+      ansible.windows.win_service:
+        name: Nebula
+        state: stopped
+      when: nebula_service_info.exists
+
+    - name: Download Nebula
+      ansible.windows.win_get_url:
+        url: "https://github.com/slackhq/nebula/releases/download/v{{ nebula_version }}/nebula-windows-amd64.zip"
+        dest: "{{ nebula_windows_install_dir }}\\nebula-windows-amd64.zip"
+        force: yes
+
+    - name: Extract Nebula
+      community.windows.win_unzip:
+        src: "{{ nebula_windows_install_dir }}\\nebula-windows-amd64.zip"
+        dest: "{{ nebula_windows_install_dir }}"
+        delete_archive: yes
+      notify: restart nebula
+
+    - name: Locate wintun.dll shipped in the release
+      ansible.windows.win_find:
+        paths: "{{ nebula_windows_install_dir }}"
+        patterns: wintun.dll
+        recurse: yes
+      register: wintun_files
+
+    - name: Ensure wintun.dll sits next to nebula.exe
+      ansible.windows.win_copy:
+        src: "{{ (wintun_files.files | selectattr('path', 'search', 'amd64') | map(attribute='path') | first) }}"
+        dest: "{{ nebula_windows_install_dir }}\\wintun.dll"
+        remote_src: yes
+      when: wintun_files.files | selectattr('path', 'search', 'amd64') | list | length > 0
+
+    - name: Remove the unpacked dist tree
+      ansible.windows.win_file:
+        path: "{{ nebula_windows_install_dir }}\\dist"
+        state: absent
+
+- name: Verify wintun.dll is present
+  ansible.windows.win_stat:
+    path: "{{ nebula_windows_install_dir }}\\wintun.dll"
+  register: wintun_stat
+  failed_when: not wintun_stat.stat.exists
+
+- name: Sign certificate on lighthouse and fetch cert/key/CA
+  include_tasks: sign.yml
+
+- name: Ensure Cert, Key, CA files exist
+  ansible.windows.win_copy:
+    dest: "{{ nebula_windows_install_dir }}\\{{ item['item'] }}"
+    content: "{{ item['content'] | b64decode }}"
+  loop: "{{ lighthouse_files.results }}"
+  loop_control:
+    label: "{{ item['item'] }}"
+  notify: restart nebula
+
+- name: Ensure node has hosts file entry for lighthouse
+  ansible.windows.win_hosts:
+    ip_address: "{{ nebula_lighthouse_internal_ip_addr }}"
+    canonical_name: "{{ nebula_lighthouse_hostname }}.neb"
+    state: present
+  when: nebula_node_lighthouse_in_hosts_file
+
+- name: Ensure Nebula is configured
+  ansible.windows.win_template:
+    src: node_config.yml.j2
+    dest: "{{ nebula_windows_install_dir }}\\config.yml"
+  vars:
+    nebula_config_dir: >-
+      {{ nebula_windows_install_dir | replace('\\', '/') }}
+  notify: restart nebula
+
+- name: Validate Nebula config
+  ansible.windows.win_command:
+    cmd: '"{{ nebula_windows_install_dir }}\nebula.exe" -test -config "{{ nebula_windows_install_dir }}\config.yml"'
+  changed_when: false
+
+# -service install can exit 1 even though the service was created
+- name: Install Nebula service
+  ansible.windows.win_command:
+    cmd: '"{{ nebula_windows_install_dir }}\nebula.exe" -service install -config "{{ nebula_windows_install_dir }}\config.yml"'
+  failed_when: false
+  when: not nebula_service_info.exists
+
+- name: Verify Nebula service exists
+  ansible.windows.win_service_info:
+    name: Nebula
+  register: nebula_service_info_after
+  failed_when: not nebula_service_info_after.exists
+
+- name: Ensure Nebula service is enabled and running
+  ansible.windows.win_service:
+    name: Nebula
+    start_mode: auto
+    state: started
+
+- name: Ensure the Nebula restart task exists
+  community.windows.win_scheduled_task:
+    name: Ansible - Restart Nebula
+    description: Restarts the Nebula service outside the SSH session that requested it
+    actions:
+      - path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+        arguments: -NoProfile -Command "Start-Sleep 3; Restart-Service Nebula"
+    triggers: []
+    username: SYSTEM
+    run_level: highest
+    state: present

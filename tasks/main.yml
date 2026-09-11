@@ -3,19 +3,30 @@
   block:
     - name: Uninstall Nebula (clean install)
       include_tasks: uninstall.yml
-      when: nebula_clean_install|bool
+      when:
+        - nebula_clean_install|bool
+        - ansible_facts['os_family'] != 'Windows'
 
     - name: Preflight checks
       include_tasks: preflight.yml
 
-    - name: Install Nebula on all hosts 
+    - name: Install Nebula (Linux)
       include_tasks: nebula.yml
+      when: ansible_facts['os_family'] != 'Windows'
     
     - name: Deploy Lighthouse
       include_tasks: lighthouse.yml
-      when: inventory_hostname in groups['nebula_lighthouse']
+      when:
+        - inventory_hostname in groups['nebula_lighthouse']
+        - ansible_facts['os_family'] != 'Windows'
     
     - name: Deploy Nebula Node
       include_tasks: node.yml
-      when: inventory_hostname not in groups['nebula_lighthouse']
+      when:
+        - inventory_hostname not in groups['nebula_lighthouse']
+        - ansible_facts['os_family'] != 'Windows'
+
+    - name: Deploy Nebula Node (Windows)
+      include_tasks: windows.yml
+      when: ansible_facts['os_family'] == 'Windows'
   when: inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined

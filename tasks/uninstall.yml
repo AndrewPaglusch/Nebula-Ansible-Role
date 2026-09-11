@@ -33,7 +33,7 @@
 
 - name: Remove Nebula installation directory
   file:
-    path: /opt/nebula
+    path: "{{ nebula_config_dir }}"
     state: absent
 
 - name: Remove Nebula check from cron

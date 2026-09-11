@@ -52,6 +52,12 @@ pbx01.company.com nebula_internal_ip_addr=10.43.0.6
 
 **Note:** More variables can be found in the [role defaults.](defaults/main.yml)
 
+Nebula lives in `nebula_config_dir` (default `/opt/nebula`) on Linux hosts. Windows hosts are supported as nodes
+(not as lighthouses): the release zip is installed to `nebula_windows_install_dir` (default `C:\Program Files\Nebula`)
+and run as the `Nebula` service. Certificates are always signed on the (Linux) lighthouse. Because Windows nodes are
+usually managed over Nebula itself, the restart handler runs through a scheduled task and waits for the connection
+to come back.
+
 # SSH Debug Console
 
 This role supports Nebula's built-in SSH debug console feature. To enable it, set:
@@ -75,7 +81,7 @@ You can specify SSH keys either:
 - **From files** using the `key_files` field with paths to public key files
 - **Both** in the same user entry
 
-The role automatically generates an ED25519 SSH host key at `/opt/nebula/ssh_host_ed25519_key` when the SSH daemon is enabled.
+The role automatically generates an ED25519 SSH host key at `{{ nebula_config_dir }}/ssh_host_ed25519_key` when the SSH daemon is enabled.
 
 # Running the Playbook
 ```
