@@ -67,14 +67,9 @@
         remote_src: yes
       when: wintun_files.files | selectattr('path', 'search', 'amd64') | list | length > 0
 
-    - name: Remove the unpacked dist tree
-      ansible.windows.win_file:
-        path: "{{ nebula_windows_install_dir }}\\dist"
-        state: absent
-
-- name: Verify wintun.dll is present
+- name: Verify wintun.dll is present where Nebula loads it
   ansible.windows.win_stat:
-    path: "{{ nebula_windows_install_dir }}\\wintun.dll"
+    path: "{{ nebula_windows_install_dir }}\\dist\\windows\\wintun\\bin\\amd64\\wintun.dll"
   register: wintun_stat
   failed_when: not wintun_stat.stat.exists
 

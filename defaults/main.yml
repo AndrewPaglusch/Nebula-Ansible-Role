@@ -1,4 +1,5 @@
 nebula_version: 1.8.0
+nebula_listen_port: 4242
 nebula_network_name: "My Nebula Mesh Network"
 nebula_network_cidr: 24
 nebula_ca_cert_duration: "87600h0m0s" #10 years
