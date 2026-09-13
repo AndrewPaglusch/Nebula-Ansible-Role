@@ -33,7 +33,8 @@ listen:
   # 0.0.0.0 means "all interfaces," which is probably what you want
   #
   host: 0.0.0.0
-  port: 4242
+  # 0 = automatic
+  port: {{ nebula_listen_port }}
 
 # "punchy" basically means "send frequent keepalive packets"
 # so that your router won't expire and close your NAT tunnels.
