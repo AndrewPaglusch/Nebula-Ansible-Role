@@ -58,6 +58,22 @@ and run as the `Nebula` service. Certificates are always signed on the (Linux) l
 usually managed over Nebula itself, the restart handler runs through a scheduled task and waits for the connection
 to come back.
 
+# Certificate Groups
+
+Nebula firewall rules can match groups embedded in a host's certificate. Set `nebula_cert_groups` per host,
+for example in `host_vars`:
+
+```yaml
+nebula_cert_groups:
+  - ssh-clients
+  - jellyfin-clients
+```
+
+The default is an empty list: certificates have no groups, as before. When a node's groups change, its certificate
+is re-signed on the next run, just as when its IP address changes. Group order does not matter.
+The lighthouse's own certificate is only signed once; changing its groups requires deleting its certificate and
+key first.
+
 # SSH Debug Console
 
 This role supports Nebula's built-in SSH debug console feature. To enable it, set:
