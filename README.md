@@ -54,9 +54,31 @@ pbx01.company.com nebula_internal_ip_addr=10.43.0.6
 
 Nebula lives in `nebula_config_dir` (default `/opt/nebula`) on Linux hosts. Windows hosts are supported as nodes
 (not as lighthouses): the release zip is installed to `nebula_windows_install_dir` (default `C:\Program Files\Nebula`)
-and run as the `Nebula` service. Certificates are always signed on the (Linux) lighthouse. Because Windows nodes are
-usually managed over Nebula itself, the restart handler runs through a scheduled task and waits for the connection
-to come back.
+and run as the `Nebula` service. Certificates are signed on the Linux CA host, which defaults to the lighthouse.
+Because Windows nodes are usually managed over Nebula itself, the restart handler runs through a scheduled task
+and waits for the connection to come back.
+
+# Custom CA Host
+
+By default the lighthouse holds the CA private key and signs every certificate. To keep the CA key off a
+publicly reachable lighthouse, set `nebula_ca_host` to the inventory hostname of another Linux host:
+
+```yaml
+nebula_ca_host: admin-workstation.company.com
+```
+
+The CA host signs certificates for all nodes and the lighthouse. Other hosts receive only their own certificate,
+key and `ca.crt`. The CA host can also be a node, or can omit `nebula_internal_ip_addr` to act only as the CA.
+
+Use the same `nebula_ca_host` and `nebula_config_dir` on the lighthouse and all nodes. For a fresh install,
+include the CA host in the same play batch as the lighthouse and use Ansible's default `linear` strategy, so
+`nebula-cert` is installed before signing begins. If using `serial`, `strategy: free`, or a limit that excludes
+the CA host, install Nebula on the CA host first. A clean install on the CA host removes its CA key and certificates.
+If `nebula_ca_host` is unset, behaviour is unchanged.
+
+When moving an existing CA, securely copy both `ca.crt` and `ca.key` to `nebula_config_dir` on the new CA host
+before running the role, so existing certificates remain trusted. After verifying the move, remove old CA private
+key copies from hosts that should no longer hold them.
 
 # SSH Debug Console
 

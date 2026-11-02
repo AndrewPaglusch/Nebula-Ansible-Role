@@ -5,6 +5,7 @@
   when:
     - inventory_hostname not in groups['nebula_lighthouse']
     - ansible_facts['os_family'] != 'Windows'
+    - nebula_internal_ip_addr is defined
   listen: "restart nebula"
 
 - name: Restart Lighthouse
