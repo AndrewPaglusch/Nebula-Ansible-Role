@@ -1,6 +1,20 @@
 ---
 - name: Nebula Install
   block:
+    - name: Validate CA host is in inventory
+      assert:
+        that: nebula_ca_host in hostvars
+        fail_msg: "nebula_ca_host must be an inventory hostname."
+      when: nebula_ca_host != groups['nebula_lighthouse'][0]
+
+    - name: Validate CA host is Linux
+      assert:
+        that: ansible_facts['system'] == 'Linux'
+        fail_msg: "nebula_ca_host must be a Linux host."
+      when:
+        - inventory_hostname == nebula_ca_host
+        - nebula_ca_host != groups['nebula_lighthouse'][0]
+
     - name: Uninstall Nebula (clean install)
       include_tasks: uninstall.yml
       when:
@@ -13,6 +27,41 @@
     - name: Install Nebula (Linux)
       include_tasks: nebula.yml
       when: ansible_facts['os_family'] != 'Windows'
+
+    - name: Check CA host signing executable
+      stat:
+        path: "{{ nebula_config_dir }}/nebula-cert"
+      delegate_to: "{{ nebula_ca_host }}"
+      become: true
+      register: nebula_ca_cert_binary
+      when:
+        - nebula_ca_host != groups['nebula_lighthouse'][0]
+        - inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
+        - not ansible_check_mode
+
+    - name: Check CA host operating system
+      command: uname -s
+      delegate_to: "{{ nebula_ca_host }}"
+      changed_when: false
+      failed_when: false
+      register: nebula_ca_host_system
+      when:
+        - nebula_ca_host != groups['nebula_lighthouse'][0]
+        - inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
+        - not ansible_check_mode
+
+    - name: Validate CA host signing executable
+      assert:
+        that:
+          - nebula_ca_cert_binary.stat.exists
+          - nebula_ca_cert_binary.stat.isreg | default(false)
+          - nebula_ca_cert_binary.stat.executable | default(false)
+          - nebula_ca_host_system.stdout | default('') | trim == 'Linux'
+        fail_msg: "The CA host {{ nebula_ca_host }} must be Linux with executable nebula-cert in {{ nebula_config_dir }}; include it in the same play batch or provision it first."
+      when:
+        - nebula_ca_host != groups['nebula_lighthouse'][0]
+        - inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
+        - not ansible_check_mode
     
     - name: Deploy Lighthouse
       include_tasks: lighthouse.yml
@@ -25,8 +74,11 @@
       when:
         - inventory_hostname not in groups['nebula_lighthouse']
         - ansible_facts['os_family'] != 'Windows'
+        - nebula_internal_ip_addr is defined
 
     - name: Deploy Nebula Node (Windows)
       include_tasks: windows.yml
-      when: ansible_facts['os_family'] == 'Windows'
-  when: inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined
+      when:
+        - ansible_facts['os_family'] == 'Windows'
+        - nebula_internal_ip_addr is defined
+  when: inventory_hostname in groups['nebula_lighthouse'] or nebula_internal_ip_addr is defined or inventory_hostname == nebula_ca_host
