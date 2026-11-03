@@ -74,6 +74,37 @@ is re-signed on the next run, just as when its IP address changes. Group order d
 The lighthouse's own certificate is only signed once; changing its groups requires deleting its certificate and
 key first.
 
+# Firewall Rules with Certificate Groups
+
+Set certificate groups on the connecting host, for example in `host_vars/admin-laptop.yml`:
+
+```yaml
+nebula_cert_groups:
+  - ssh-clients
+  - admins
+```
+
+Then set rules on the receiving host, for example in `host_vars/application-server.yml`:
+
+```yaml
+nebula_inbound_rules:
+  # Allow SSH only from clients in BOTH ssh-clients AND admins.
+  # Membership in just one of these groups is not sufficient.
+  - port: 22
+    proto: tcp
+    groups: [ssh-clients, admins]
+  - port: 8096
+    proto: tcp
+    group: jellyfin-clients
+nebula_outbound_rules:
+  - { port: any, proto: any, host: any }
+```
+
+`group` matches one group; `groups` requires **every** listed group (AND). Separate rules provide
+alternatives (OR). Rules match the peer's certificate: the client for inbound traffic and the
+destination for outbound traffic. Omit `host: any` from a group-restricted rule: it would also match
+hosts outside the group. Setting `nebula_inbound_rules` replaces the default allow-all list.
+
 # SSH Debug Console
 
 This role supports Nebula's built-in SSH debug console feature. To enable it, set:
