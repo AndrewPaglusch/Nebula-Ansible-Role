@@ -26,6 +26,7 @@
     owner: root
     group: root
     mode: '0400'
+    validate: "{{ nebula_config_dir }}/nebula -test -config %s"
   notify: restart nebula
 
 - name: Ensure Nebula service exists

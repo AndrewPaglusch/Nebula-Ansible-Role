@@ -124,7 +124,7 @@ firewall:
     - port: {{ rule.port }}
       proto: {{ rule.proto }}
 {% if rule.host is defined %}
-      host: {{ rule.host | to_json }}
+      host: {{ rule.host }}
 {% endif %}
 {% if rule.group is defined %}
       group: {{ rule.group | to_json }}
@@ -139,7 +139,7 @@ firewall:
     - port: {{ rule.port }}
       proto: {{ rule.proto }}
 {% if rule.host is defined %}
-      host: {{ rule.host | to_json }}
+      host: {{ rule.host }}
 {% endif %}
 {% if rule.group is defined %}
       group: {{ rule.group | to_json }}

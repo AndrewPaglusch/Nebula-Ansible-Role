@@ -51,8 +51,5 @@ nebula_sshd_trusted_cas: []
 
 
 nebula_config_dir: /opt/nebula
-
-# Groups embedded in this host's certificate for use in firewall rules.
-# Empty means no groups, preserving the previous behaviour.
 nebula_cert_groups: []
 nebula_windows_install_dir: 'C:\Program Files\Nebula'

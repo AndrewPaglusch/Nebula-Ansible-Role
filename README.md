@@ -69,7 +69,7 @@ nebula_cert_groups:
   - jellyfin-clients
 ```
 
-The default is an empty list: certificates have no groups, as before. When a node's groups change, its certificate
+The default is an empty list, which signs certificates without groups. When a node's groups change, its certificate
 is re-signed on the next run, just as when its IP address changes. Group order does not matter.
 The lighthouse's own certificate is only signed once; changing its groups requires deleting its certificate and
 key first.
@@ -88,8 +88,7 @@ Then set rules on the receiving host, for example in `host_vars/application-serv
 
 ```yaml
 nebula_inbound_rules:
-  # Allow SSH only from clients in BOTH ssh-clients AND admins.
-  # Membership in just one of these groups is not sufficient.
+  # peer must be in both groups
   - port: 22
     proto: tcp
     groups: [ssh-clients, admins]
