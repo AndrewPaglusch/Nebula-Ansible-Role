@@ -51,9 +51,5 @@ nebula_sshd_trusted_cas: []
 
 
 nebula_config_dir: /opt/nebula
-
-# Host that holds the CA private key and signs all certificates (including the
-# lighthouse's). Defaults to the first lighthouse, which preserves the previous
-# behaviour. Include it in the same play batch or install nebula-cert first.
 nebula_ca_host: "{{ groups['nebula_lighthouse'][0] }}"
 nebula_windows_install_dir: 'C:\Program Files\Nebula'
