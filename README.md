@@ -74,11 +74,12 @@ Use the same `nebula_ca_host` and `nebula_config_dir` on the lighthouse and all 
 include the CA host in the same play batch as the lighthouse and use Ansible's default `linear` strategy, so
 `nebula-cert` is installed before signing begins. If using `serial`, `strategy: free`, or a limit that excludes
 the CA host, install Nebula on the CA host first. A clean install on the CA host removes its CA key and certificates.
-If `nebula_ca_host` is unset, behaviour is unchanged.
 
-When moving an existing CA, securely copy both `ca.crt` and `ca.key` to `nebula_config_dir` on the new CA host
-before running the role, so existing certificates remain trusted. After verifying the move, remove old CA private
-key copies from hosts that should no longer hold them.
+When moving an existing CA, securely copy every `.crt` and `.key` file in `nebula_config_dir` on the old CA host
+(the CA, the lighthouse and each node) to the same directory on the new CA host before running the role. If you
+copy only `ca.crt` and `ca.key`, the role signs a new certificate and key for the lighthouse and for every node on
+its next run, restarting Nebula on each one. After verifying the move, remove the private keys from hosts that
+should no longer hold them.
 
 # SSH Debug Console
 
