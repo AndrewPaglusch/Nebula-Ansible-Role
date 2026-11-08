@@ -51,5 +51,6 @@ nebula_sshd_trusted_cas: []
 
 
 nebula_config_dir: /opt/nebula
+nebula_ca_host: "{{ groups['nebula_lighthouse'][0] }}"
 nebula_cert_groups: []
 nebula_windows_install_dir: 'C:\Program Files\Nebula'

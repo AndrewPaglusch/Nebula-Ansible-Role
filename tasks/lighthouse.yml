@@ -4,12 +4,41 @@
     chdir: "{{ nebula_config_dir }}"
     cmd: ./nebula-cert ca -name "{{ nebula_network_name }}" -duration "{{ nebula_ca_cert_duration }}"
     creates: "{{ nebula_config_dir }}/ca.crt"
+  delegate_to: "{{ nebula_ca_host }}"
+  become: true
 
 - name: Ensure lighthouse cert/key exists
   command:
     chdir: "{{ nebula_config_dir }}"
     cmd: ./nebula-cert sign -name "{{ nebula_lighthouse_hostname }}" -ip "{{ nebula_lighthouse_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"{% if nebula_cert_groups | length > 0 %} -groups "{{ nebula_cert_groups | join(',') }}"{% endif %}
     creates: "{{ nebula_config_dir }}/{{ nebula_lighthouse_hostname }}.crt"
+  delegate_to: "{{ nebula_ca_host }}"
+  become: true
+
+- name: Read lighthouse cert/key/CA from CA host
+  slurp:
+    src: "{{ nebula_config_dir }}/{{ item }}"
+  register: lighthouse_ca_host_files
+  delegate_to: "{{ nebula_ca_host }}"
+  become: true
+  loop:
+    - "{{ nebula_lighthouse_hostname }}.crt"
+    - "{{ nebula_lighthouse_hostname }}.key"
+    - ca.crt
+  when: nebula_ca_host != inventory_hostname
+
+- name: Ensure lighthouse has its cert/key/CA files
+  copy:
+    dest: "{{ nebula_config_dir }}/{{ item['item'] }}"
+    content: "{{ item['content'] | b64decode }}"
+    owner: root
+    group: root
+    mode: 0600
+  loop: "{{ lighthouse_ca_host_files.results }}"
+  loop_control:
+    label: "{{ item['item'] }}"
+  when: nebula_ca_host != inventory_hostname
+  notify: restart nebula
 
 - name: Ensure lighthouse is configured
   template:
