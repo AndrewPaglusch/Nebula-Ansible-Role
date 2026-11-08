@@ -22,12 +22,21 @@
     - cert_stat.stat.exists
     - current_cert_json.stdout != ""
 
-- name: Print IP address from cert (if one exists)
+- name: Parse the groups from the certificate details (if it exists)
+  set_fact:
+    current_cert_groups: "{{ current_cert_json.stdout | from_json | json_query('details.groups') | default([], true) }}"
+  when:
+    - cert_stat.stat.exists
+    - current_cert_json.stdout != ""
+
+- name: Print IP address and groups from cert (if one exists)
   debug:
-    msg: "IP Address in Cert: {{ current_cert_ip }}, Expected IP Address: {{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}"
+    msg: >-
+      IP Address in Cert: {{ current_cert_ip }}, Expected IP Address: {{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }};
+      Groups in Cert: {{ current_cert_groups | sort }}, Expected Groups: {{ nebula_cert_groups | sort }}
   when: cert_stat.stat.exists
 
-- name: Delete invalid node certificate and key from CA host (wrong IP address)
+- name: Delete invalid node certificate and key from CA host (wrong IP address or groups)
   file:
     path: "{{ nebula_config_dir }}/{{ item }}"
     state: absent
@@ -38,15 +47,15 @@
     - "{{ inventory_hostname }}.key"
   when:
     - cert_stat.stat.exists
-    - current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string
+    - (current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string) or ((current_cert_groups | sort) != (nebula_cert_groups | sort))
 
 - name: Ensure a cert/key exists for each node on CA host
   command:
     chdir: "{{ nebula_config_dir }}"
-    cmd: ./nebula-cert sign -name "{{ inventory_hostname }}" -ip "{{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
+    cmd: ./nebula-cert sign -name "{{ inventory_hostname }}" -ip "{{ nebula_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"{% if nebula_cert_groups | length > 0 %} -groups "{{ nebula_cert_groups | join(',') }}"{% endif %}
   delegate_to: "{{ nebula_ca_host }}"
   become: true
-  when: not cert_stat.stat.exists or current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string
+  when: not cert_stat.stat.exists or current_cert_ip != nebula_internal_ip_addr|string + '/' + nebula_network_cidr|string or (current_cert_groups | sort) != (nebula_cert_groups | sort)
 
 - name: Ensure lighthouse has hosts file entry for node
   lineinfile:

@@ -123,12 +123,28 @@ firewall:
 {% for rule in nebula_outbound_rules %}
     - port: {{ rule.port }}
       proto: {{ rule.proto }}
+{% if rule.host is defined %}
       host: {{ rule.host }}
+{% endif %}
+{% if rule.group is defined %}
+      group: {{ rule.group | to_json }}
+{% endif %}
+{% if rule.groups is defined %}
+      groups: {{ rule.groups | to_json }}
+{% endif %}
 {% endfor %}
 
   inbound:
 {% for rule in nebula_inbound_rules %}
     - port: {{ rule.port }}
       proto: {{ rule.proto }}
+{% if rule.host is defined %}
       host: {{ rule.host }}
+{% endif %}
+{% if rule.group is defined %}
+      group: {{ rule.group | to_json }}
+{% endif %}
+{% if rule.groups is defined %}
+      groups: {{ rule.groups | to_json }}
+{% endif %}
 {% endfor %}

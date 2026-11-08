@@ -10,7 +10,7 @@
 - name: Ensure lighthouse cert/key exists
   command:
     chdir: "{{ nebula_config_dir }}"
-    cmd: ./nebula-cert sign -name "{{ nebula_lighthouse_hostname }}" -ip "{{ nebula_lighthouse_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"
+    cmd: ./nebula-cert sign -name "{{ nebula_lighthouse_hostname }}" -ip "{{ nebula_lighthouse_internal_ip_addr }}/{{ nebula_network_cidr }}" -duration "{{ nebula_client_cert_duration }}"{% if nebula_cert_groups | length > 0 %} -groups "{{ nebula_cert_groups | join(',') }}"{% endif %}
     creates: "{{ nebula_config_dir }}/{{ nebula_lighthouse_hostname }}.crt"
   delegate_to: "{{ nebula_ca_host }}"
   become: true
@@ -47,6 +47,7 @@
     owner: root
     group: root
     mode: '0400'
+    validate: "{{ nebula_config_dir }}/nebula -test -config %s"
   notify: restart nebula
 
 - name: Ensure lighthouse service exists
