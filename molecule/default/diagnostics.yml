@@ -1,0 +1,54 @@
+---
+- name: Inspect provisioning state even when guests are unreachable
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+  tasks:
+    - name: List LXD instances in the selected project
+      timeout: 30
+      ignore_errors: true
+      ansible.builtin.command:
+        argv:
+          - lxc
+          - list
+          - "{{ hostvars['lighthouse'].ansible_lxd_remote }}:"
+          - --project
+          - "{{ hostvars['lighthouse'].ansible_lxd_project }}"
+      register: instances
+      changed_when: false
+      failed_when: false
+
+    - name: Print provisioning state
+      ansible.builtin.debug:
+        msg: "{{ instances.stdout_lines | default([]) + instances.stderr_lines | default([]) }}"
+
+- name: Collect independent-management diagnostics before cleanup
+  hosts: nebula_test
+  gather_facts: false
+  tasks:
+    - name: Inspect service, journal and network state
+      timeout: 30
+      ansible.builtin.command: "{{ item }}"
+      vars:
+        test_service: "{{ 'lighthouse' if inventory_hostname in groups['nebula_lighthouse'] else 'nebula' }}"
+      loop:
+        - "systemctl status {{ test_service }} --no-pager --full"
+        - "journalctl -u {{ test_service }} --no-pager -n 100"
+        - ip addr
+        - ip route
+        - tail -n 100 /var/log/molecule-prepare.log
+        - "{{ nebula_config_dir }}/nebula -test -config {{ nebula_config_dir }}/config.yml"
+      register: diagnostics
+      changed_when: false
+      failed_when: false
+      ignore_errors: true
+      ignore_unreachable: true
+
+    - name: Print diagnostic results without reading private keys
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines | default([]) + item.stderr_lines | default([]) }}"
+      loop: "{{ diagnostics.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item }}"

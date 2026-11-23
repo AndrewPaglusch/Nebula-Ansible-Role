@@ -1,2 +1,7 @@
 # ssh keys
 ansible_*
+
+# Local integration-test dependencies and generated state
+.venv/
+.cache/
+.ansible/

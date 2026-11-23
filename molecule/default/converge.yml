@@ -1,0 +1,10 @@
+---
+- name: Deploy the checked-out Nebula role
+  hosts: nebula_test
+  gather_facts: true
+  vars:
+    nebula_lighthouse_public_hostname: "{{ hostvars['lighthouse'].ansible_facts.default_ipv4.address }}"
+  tasks:
+    - name: Apply this checkout using the normal lighthouse-hosted CA
+      ansible.builtin.include_role:
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"

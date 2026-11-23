@@ -1,0 +1,39 @@
+---
+- name: Prepare Linux prerequisites without installing Nebula
+  hosts: nebula_test
+  gather_facts: false
+  tasks:
+    - name: Wait for systemd boot to finish
+      ansible.builtin.raw: systemctl is-system-running
+      register: boot
+      until: boot.stdout | trim in ['running', 'degraded']
+      retries: 30
+      delay: 2
+      changed_when: false
+      failed_when: boot.stdout | trim not in ['running', 'degraded']
+
+    - name: Install Python and role/test prerequisites
+      timeout: 240
+      ansible.builtin.raw: >-
+        export DEBIAN_FRONTEND=noninteractive;
+        timeout 180s sh -c '
+        apt-get -o Acquire::ForceIPv4=true -o Acquire::http::Timeout=15 update &&
+        apt-get -o Acquire::ForceIPv4=true -o Acquire::http::Timeout=15
+        install -y python3 iputils-ping iproute2 cron ca-certificates tar gzip'
+        > /var/log/molecule-prepare.log 2>&1
+      register: packages
+      until: packages.rc == 0
+      retries: 2
+      delay: 3
+      changed_when: true
+
+    - name: Prove the container can create a TUN interface
+      ansible.builtin.shell: |
+        set -eu
+        trap 'ip link delete molecule-tun 2>/dev/null || true' EXIT
+        ip tuntap add dev molecule-tun mode tun
+        ip link show molecule-tun
+      changed_when: false
+
+    - name: Gather management and underlay facts
+      ansible.builtin.setup:

@@ -1,0 +1,39 @@
+---
+- name: Create three disposable LXD containers
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    test_remote: "{{ hostvars['lighthouse'].ansible_lxd_remote }}"
+    test_project: "{{ hostvars['lighthouse'].ansible_lxd_project }}"
+    test_owner: "{{ hostvars['lighthouse'].nebula_test_owner }}"
+    test_names: "{{ groups['nebula_test'] | map('extract', hostvars, 'ansible_host') | list }}"
+  tasks:
+    - name: Inspect resource ownership
+      ansible.builtin.include_tasks: resources.yml
+
+    - name: Initialise missing Ubuntu 24.04 containers
+      ansible.builtin.command:
+        argv: [lxc, init, 'ubuntu:24.04', "{{ test_remote }}:{{ item }}", --project, "{{ test_project }}"]
+        stdin: "{{ test_config | to_nice_yaml }}"
+      vars:
+        test_config:
+          config:
+            user.nebula-molecule-owner: "{{ test_owner }}"
+            limits.memory: 512MiB
+          devices:
+            tun:
+              type: unix-char
+              source: /dev/net/tun
+              path: /dev/net/tun
+      loop: "{{ test_names }}"
+      when: item not in (test_instances.stdout | from_json | map(attribute='name') | list)
+      changed_when: true
+
+    - name: Start containers
+      ansible.builtin.command:
+        argv: [lxc, start, "{{ test_remote }}:{{ item }}", --project, "{{ test_project }}"]
+      loop: "{{ test_names }}"
+      when: item not in (test_instances.stdout | from_json | selectattr('status', 'equalto', 'Running') | map(attribute='name') | list)
+      changed_when: true

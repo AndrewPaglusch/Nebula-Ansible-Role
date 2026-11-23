@@ -1,0 +1,18 @@
+---
+# Shared by create/destroy: inspect before touching any existing instance.
+- name: List instances in the selected LXD project
+  ansible.builtin.command:
+    argv: [lxc, list, "{{ test_remote }}:", --project, "{{ test_project }}", --format, json]
+  register: test_instances
+  changed_when: false
+
+- name: Refuse to manage an instance owned by someone else
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - item.config.get('user.nebula-molecule-owner', '') == test_owner
+    fail_msg: "Refusing to touch unowned instance {{ item.name }} in {{ test_remote }}:{{ test_project }}"
+  loop: "{{ test_instances.stdout | from_json }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.name in test_names

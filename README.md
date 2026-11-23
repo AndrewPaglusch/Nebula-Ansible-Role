@@ -156,3 +156,9 @@ The role automatically generates an ED25519 SSH host key at `{{ nebula_config_di
 ```
 ansible-playbook -i inventory nebula.yml
 ```
+
+# Integration Testing
+
+Run `molecule test` to deploy a disposable lighthouse and two Ubuntu 24.04 LXD
+nodes and verify real Nebula overlay connectivity. See the [testing guide](molecule/README.md)
+for prerequisites, local debugging and adding regression checks.

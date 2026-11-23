@@ -1,0 +1,45 @@
+---
+- name: Verify node-to-node overlay connectivity
+  hosts: node1
+  gather_facts: false
+  tasks:
+    - name: Check connectivity through the configured tunnel
+      block:
+        - name: Read the configuration installed by the role
+          ansible.builtin.slurp:
+            src: "{{ nebula_config_dir }}/config.yml"
+          register: installed_config
+
+        - name: Ping node2's Nebula address through node1's Nebula interface
+          ansible.builtin.command:
+            argv:
+              - ping
+              - -I
+              - "{{ (installed_config.content | b64decode | from_yaml).tun.dev }}"
+              - -n
+              - -c
+              - '1'
+              - -W
+              - '2'
+              - "{{ hostvars['node2'].nebula_internal_ip_addr }}"
+          register: overlay_ping
+          until: overlay_ping.rc == 0
+          retries: 12
+          delay: 2
+          changed_when: false
+      rescue:
+        - name: Record connectivity failure for diagnostics
+          ansible.builtin.set_fact:
+            overlay_failed: true
+
+- ansible.builtin.import_playbook: diagnostics.yml
+  when: hostvars['node1'].overlay_failed | default(false)
+
+- name: Preserve the verifier's failed exit status after diagnostics
+  hosts: node1
+  gather_facts: false
+  tasks:
+    - name: Require working Nebula connectivity
+      ansible.builtin.assert:
+        that: not (overlay_failed | default(false))
+        fail_msg: "node1 cannot reach node2 through Nebula; see diagnostics above."

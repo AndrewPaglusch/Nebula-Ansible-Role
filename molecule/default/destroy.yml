@@ -1,0 +1,23 @@
+---
+- name: Destroy only this checkout's test containers
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    test_remote: "{{ hostvars['lighthouse'].ansible_lxd_remote }}"
+    test_project: "{{ hostvars['lighthouse'].ansible_lxd_project }}"
+    test_owner: "{{ hostvars['lighthouse'].nebula_test_owner }}"
+    test_names: "{{ groups['nebula_test'] | map('extract', hostvars, 'ansible_host') | list }}"
+  tasks:
+    - name: Inspect resource ownership
+      ansible.builtin.include_tasks: resources.yml
+
+    - name: Delete owned instances, including partially prepared instances
+      ansible.builtin.command:
+        argv: [lxc, delete, "{{ test_remote }}:{{ item.name }}", --project, "{{ test_project }}", --force]
+      loop: "{{ test_instances.stdout | from_json }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: item.name in test_names
+      changed_when: true
