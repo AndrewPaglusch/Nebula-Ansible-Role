@@ -159,7 +159,8 @@ ansible-playbook -i inventory nebula.yml
 
 # Integration Testing
 
-Run `molecule test` to deploy a disposable lighthouse and two Ubuntu 24.04 LXD
-nodes and verify real Nebula overlay connectivity. To select a release, use
-`molecule test -- -e "nebula_version=1.12.0"`. See the [testing guide](molecule/README.md)
-for prerequisites, version selection, local debugging and adding regression checks.
+Run `molecule test --all` to verify real Nebula overlay connectivity with Nebula
+1.8.0 and 1.12.0, each on a fresh lighthouse and two Ubuntu 24.04 LXD nodes.
+Use `molecule test` for just 1.8.0 or `molecule test -s nebula-1-12` for 1.12.0.
+See the [testing guide](molecule/README.md) for prerequisites, other version
+overrides, local debugging and adding regression checks.

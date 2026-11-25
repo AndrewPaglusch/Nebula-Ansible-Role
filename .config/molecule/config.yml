@@ -1,0 +1,62 @@
+---
+# Apply the checkout by absolute path; do not install another copy from Galaxy.
+prerun: false
+dependency:
+  name: galaxy
+  options:
+    role-file: molecule/requirements.yml
+    requirements-file: molecule/requirements.yml
+driver:
+  name: default
+platforms:
+  - name: lighthouse
+    groups: [nebula_test, nebula_lighthouse]
+  - name: node1
+    groups: [nebula_test]
+  - name: node2
+    groups: [nebula_test]
+provisioner:
+  name: ansible
+  log: true
+  playbooks:
+    # Both version scenarios use the same lifecycle and verification playbooks.
+    create: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/create.yml
+    prepare: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/prepare.yml
+    converge: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/converge.yml
+    verify: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/verify.yml
+    destroy: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/destroy.yml
+    cleanup: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/diagnostics.yml
+    side_effect: ${MOLECULE_PROJECT_DIRECTORY}/molecule/default/diagnostics.yml
+  inventory:
+    group_vars:
+      all:
+        nebula_test_owner: "${MOLECULE_PROJECT_DIRECTORY}"
+        nebula_test_prefix: "nebula-smoke-{{ (nebula_test_owner | hash('sha1'))[:10] }}-${MOLECULE_SCENARIO_NAME}"
+        ansible_connection: community.general.lxd
+        ansible_lxd_remote: "${NEBULA_TEST_REMOTE:-local}"
+        ansible_lxd_project: "${NEBULA_TEST_PROJECT:-default}"
+        ansible_python_interpreter: /usr/bin/python3
+        nebula_network_name: Molecule smoke test
+        nebula_network_cidr: 24
+        nebula_lighthouse_internal_ip_addr: 10.43.0.1
+        nebula_config_dir: /opt/nebula
+    host_vars:
+      lighthouse:
+        ansible_host: "{{ nebula_test_prefix }}-lighthouse"
+      node1:
+        ansible_host: "{{ nebula_test_prefix }}-node1"
+        nebula_internal_ip_addr: 10.43.0.2
+      node2:
+        ansible_host: "{{ nebula_test_prefix }}-node2"
+        nebula_internal_ip_addr: 10.43.0.3
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - destroy
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy

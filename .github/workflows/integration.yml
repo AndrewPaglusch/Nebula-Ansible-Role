@@ -29,10 +29,10 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install -r molecule/requirements.txt
       - name: Run the same smoke test as local development
-        run: molecule test --destroy=never
+        run: molecule test --all --destroy=never
       - name: Collect diagnostics before removing failed instances
         if: failure()
-        run: molecule side-effect
+        run: molecule side-effect --all
       - name: Remove test instances
         if: always()
-        run: molecule destroy
+        run: molecule destroy --all

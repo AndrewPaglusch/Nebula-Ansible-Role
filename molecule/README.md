@@ -1,19 +1,20 @@
 # Integration testing
 
-One smoke test deploys **this checkout** to three unprivileged Ubuntu 24.04 LXD
-containers: `lighthouse` (also the disposable CA), `node1` and `node2`. It verifies
+The same smoke test runs against Nebula 1.8.0 and 1.12.0. Each scenario deploys
+**this checkout** to three fresh unprivileged Ubuntu 24.04 LXD containers:
+`lighthouse` (also the disposable CA), `node1` and `node2`. It verifies
 node1 can ping node2's Nebula address, bound to the interface read from the
 installed configuration. Ansible manages guests through LXD, independently of
 Nebula, without SSH. Overlay addresses are `10.43.0.1`, `.2` and `.3` with a `/24`
-prefix; change them together in `default/molecule.yml` if they conflict locally.
-This initial scenario excludes idempotency, version matrices, certificate changes,
+prefix; change them together in `.config/molecule/config.yml` if they conflict locally.
+This smoke suite excludes idempotency, certificate changes,
 group/firewall-policy tests, separate CA hosts, other distributions and Windows.
 
 ## Prerequisites and installation
 
 Use a Linux LXD host with systemd-capable containers, working `/dev/net/tun`,
-outbound Ubuntu/GitHub access and roughly 1.5 GiB guest RAM plus image storage.
-Preparation checks actual TUN creation using a narrow `unix-char` device.
+outbound Ubuntu/GitHub access and roughly 1.5 GiB guest RAM per scenario plus
+image storage. Preparation checks actual TUN creation using a narrow `unix-char` device.
 
 On a **new** Ubuntu host:
 
@@ -35,7 +36,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r molecule/requirements.txt
 ansible-galaxy collection install -r molecule/requirements.yml
-molecule test
+molecule test --all
 ```
 
 The pinned harness uses Ansible 2.20, not the role's historical 2.4 minimum.
@@ -44,18 +45,20 @@ inspection; `ansible.windows` resolves the role's Windows handlers on Linux.
 
 ## Selecting a Nebula version
 
-By default, the scenario uses the role's default Nebula version. Override it with
-Ansible extra variables after Molecule's `--` separator:
+The two six-line scenario files select versions; shared configuration lives in
+`.config/molecule/config.yml`. All playbooks remain shared in `molecule/default/`.
 
 ```bash
-molecule test -- -e "nebula_version=1.8.0"
-molecule test -- -e "nebula_version=1.12.0"
+molecule test --all                # Both versions, each with fresh containers
+molecule test                      # default scenario: 1.8.0 only
+molecule test -s nebula-1-12        # 1.12.0 only
 ```
 
-Each command runs the complete scenario with fresh containers. Run them
-sequentially in one checkout. For iterative work, use
-`molecule converge -- -e "nebula_version=1.12.0"`, then `molecule verify`;
-verification uses the installed version and does not redeploy.
+For an arbitrary release, pass Ansible extra variables after `--`, for example
+`molecule test -- -e "nebula_version=1.12.0"`. Bare iteration commands select
+`default`; append `-s nebula-1-12` to create/converge/verify/destroy for that version.
+Verification uses the installed version and does not redeploy. This tests fresh
+installations, not upgrades between versions.
 
 ## Iteration and remote access
 
@@ -71,31 +74,33 @@ Optionally select an existing remote/project; defaults are `local` and `default`
 
 ```bash
 export NEBULA_TEST_REMOTE=my-remote NEBULA_TEST_PROJECT=my-test-project
-molecule test
+molecule test --all
 ```
 
 Keep these settings throughout a run. Both lifecycle and connection-plugin
 operations use `lxc` on PATH and its authenticated configuration (`LXD_CONF` when
 needed). The scenario never deletes projects, networks or profiles. Names contain
-a checkout-path hash, and ownership markers prevent deletion of colliding,
-unowned instances. Use one run per physical checkout and remote/project at a time.
+a checkout-path hash and scenario name; ownership markers protect colliding,
+unowned instances. Use one run per checkout/scenario and remote/project at a time.
 
 ## Debugging and cleanup
 
-`molecule test --destroy=never` retains guests, skipping both initial and final
-destruction. Run `molecule destroy` first for a fresh retained environment.
-Inspect with `molecule side-effect`, then reapply/verify or explicitly destroy.
+`molecule test --all --destroy=never` retains both environments (six guests),
+skipping initial and final destruction. Run `molecule destroy --all` first for a
+fresh retained run. Inspect with `molecule side-effect --all`, then reapply/verify
+one scenario or explicitly clean up with `molecule destroy --all`.
 Normal failed tests collect diagnostics before destruction through Molecule
 26.11's automatic failure cleanup, independently of `test_sequence`. Verification
 also preserves the original failing task/error. Private keys are not printed.
 CI retains guests for diagnostics and always attempts explicit cleanup.
 
-To inspect guests directly, calculate their prefix from the repository root:
+To inspect guests directly, select a scenario and calculate its prefix:
 
 ```bash
 export NEBULA_TEST_REMOTE="${NEBULA_TEST_REMOTE:-local}"
 export NEBULA_TEST_PROJECT="${NEBULA_TEST_PROJECT:-default}"
-PREFIX=$(python -c 'import hashlib,pathlib; print("nebula-smoke-" + hashlib.sha1(str(pathlib.Path.cwd().resolve()).encode()).hexdigest()[:10])')
+SCENARIO=default  # Or nebula-1-12
+PREFIX="$(python -c 'import hashlib,pathlib; print("nebula-smoke-" + hashlib.sha1(str(pathlib.Path.cwd().resolve()).encode()).hexdigest()[:10])')-$SCENARIO"
 lxc list "$NEBULA_TEST_REMOTE:" --project "$NEBULA_TEST_PROJECT"
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" -- journalctl -u nebula --no-pager -n 100
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" -- bash
@@ -112,13 +117,13 @@ an interrupted process; it also removes disposable certificates and keys.
 After create/converge, use the prefix and remote/project variables above:
 
 ```bash
-molecule verify  # Must pass
+molecule verify -s "$SCENARIO"  # Must pass
 # Stop cron too: the role's watchdog can otherwise restart a stopped Nebula.
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node2" --project "$NEBULA_TEST_PROJECT" -- systemctl stop cron nebula
-molecule verify  # Must fail with a non-zero exit and failed overlay ping
+molecule verify -s "$SCENARIO"  # Must fail with a non-zero exit and failed overlay ping
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node2" --project "$NEBULA_TEST_PROJECT" -- systemctl start nebula cron
-molecule verify  # Must pass again
-molecule destroy
+molecule verify -s "$SCENARIO"  # Must pass again
+molecule destroy -s "$SCENARIO"
 ```
 
 Restore both services even after unexpected results. This exercises the same
@@ -128,7 +133,7 @@ verifier as CI and is not an additional automated test.
 
 Add an assertion in `default/verify.yml` and confirm it fails against the unfixed
 role. Implement the fix, rerun `molecule converge` and `molecule verify`, then run
-the complete `molecule test` suite. As checks grow, include ordinary task files
+the complete `molecule test --all` suite. As checks grow, include ordinary task files
 under `default/checks/`; reuse provisioning and inventory without changing CI.
 
 The built-in default/delegated driver avoids the archived `molecule-lxd` plugin;
