@@ -28,9 +28,16 @@
           delay: 2
           changed_when: false
       rescue:
-        - name: Record connectivity failure for diagnostics
+        - name: Preserve the original verification failure for diagnostics
           ansible.builtin.set_fact:
             overlay_failed: true
+            # Keep useful error fields, not slurped configuration or other content.
+            overlay_failure:
+              task: "{{ ansible_failed_task.name }}"
+              message: "{{ ansible_failed_result.msg | default('Task failed without a message') }}"
+              rc: "{{ ansible_failed_result.rc | default('unavailable') }}"
+              stdout: "{{ ansible_failed_result.stdout | default('') }}"
+              stderr: "{{ ansible_failed_result.stderr | default('') }}"
 
 - ansible.builtin.import_playbook: diagnostics.yml
   when: hostvars['node1'].overlay_failed | default(false)
@@ -39,7 +46,10 @@
   hosts: node1
   gather_facts: false
   tasks:
-    - name: Require working Nebula connectivity
+    - name: Require successful Nebula verification
       ansible.builtin.assert:
         that: not (overlay_failed | default(false))
-        fail_msg: "node1 cannot reach node2 through Nebula; see diagnostics above."
+        fail_msg: |-
+          Nebula verification failed. Original failing operation:
+          {{ overlay_failure | default({}) | to_nice_yaml }}
+          See diagnostics above.
