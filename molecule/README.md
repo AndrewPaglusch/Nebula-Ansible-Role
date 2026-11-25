@@ -1,20 +1,16 @@
 # Integration testing
 
-The same smoke test runs against the role's default Nebula version and 1.12.0.
-Each scenario deploys **this checkout** to three fresh unprivileged Ubuntu 24.04 LXD containers:
-`lighthouse` (also the disposable CA), `node1` and `node2`. It verifies
-node1 can ping node2's Nebula address, bound to the interface read from the
-installed configuration. Ansible manages guests through LXD, independently of
-Nebula, without SSH. Overlay addresses are `10.43.0.1`, `.2` and `.3` with a `/24`
-prefix; change them together in `.config/molecule/config.yml` if they conflict locally.
-This smoke suite excludes idempotency, certificate changes,
-group/firewall-policy tests, separate CA hosts, other distributions and Windows.
+Each scenario installs this checkout on three fresh Ubuntu 24.04 LXD containers:
+`lighthouse` (also the disposable CA), `node1` and `node2`. Verification pings
+node2's overlay address from node1, bound to the configured Nebula interface.
+Ansible manages the guests through LXD, independently of Nebula and without SSH.
 
 ## Prerequisites and installation
 
 Use a Linux LXD host with systemd-capable containers, working `/dev/net/tun`,
 outbound Ubuntu/GitHub access and roughly 1.5 GiB guest RAM per scenario plus
-image storage. Preparation checks actual TUN creation using a narrow `unix-char` device.
+image storage. The controller needs Python 3.12–3.14 with venv support
+(`python3-venv` on Ubuntu).
 
 On a **new** Ubuntu host:
 
@@ -25,29 +21,20 @@ sudo usermod -aG lxd "$USER"
 # Log out and back in to activate group membership, then run: lxc list local:
 ```
 
-Reuse existing LXD configurations: the project's default profile must supply a
-root disk and a working bridge NIC. LXD membership grants host administrative
-access; Molecule itself need not run as root.
+For an existing installation, reuse its configuration. The selected project's
+default profile must supply a root disk and a working bridge NIC. Run Molecule
+as a user with LXD access; it does not need sudo.
 
-From the repository root, use Python 3.12–3.14 (`python3-venv` on Ubuntu):
+Install dependencies from the repository root:
 
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r molecule/requirements.txt
 ansible-galaxy collection install -r molecule/requirements.yml
-molecule test --all
 ```
 
-The pinned harness uses Ansible 2.20, not the role's historical 2.4 minimum.
-Molecule also installs the declared collections. `jmespath` supports certificate
-inspection; `ansible.windows` resolves the role's Windows handlers on Linux.
-
-## Selecting a Nebula version
-
-The `default` scenario inherits `nebula_version` from the role's `defaults/main.yml`;
-`nebula-1-12` explicitly selects 1.12.0. Shared configuration lives in
-`.config/molecule/config.yml`. All playbooks remain shared in `molecule/default/`.
+## Running tests
 
 ```bash
 molecule test --all                # Both versions, each with fresh containers
@@ -55,13 +42,12 @@ molecule test                      # Role's default Nebula version
 molecule test -s nebula-1-12        # 1.12.0 only
 ```
 
-For an arbitrary release, pass Ansible extra variables after `--`, for example
-`molecule test -- -e "nebula_version=1.12.0"`. Bare iteration commands select
-`default`; append `-s nebula-1-12` to create/converge/verify/destroy for that version.
-Verification uses the installed version and does not redeploy. This tests fresh
-installations, not upgrades between versions.
+The `default` scenario inherits `nebula_version` from the role's `defaults/main.yml`;
+`nebula-1-12` selects 1.12.0. To override a version, use
+`molecule test -- -e "nebula_version=1.12.0"`. The suite tests fresh installations
+and connectivity, not upgrades between versions.
 
-## Iteration and remote access
+For iterative development:
 
 ```bash
 molecule create       # Creates guests and prepares prerequisites
@@ -71,6 +57,10 @@ molecule side-effect  # Print provisioning, service, journal and network diagnos
 molecule destroy      # Remove owned guests, including partially prepared ones
 ```
 
+Bare commands select `default`; append `-s nebula-1-12` for the other scenario.
+
+## Remote access
+
 Optionally select an existing remote/project; defaults are `local` and `default`:
 
 ```bash
@@ -78,11 +68,9 @@ export NEBULA_TEST_REMOTE=my-remote NEBULA_TEST_PROJECT=my-test-project
 molecule test --all
 ```
 
-Keep these settings throughout a run. Both lifecycle and connection-plugin
-operations use `lxc` on PATH and its authenticated configuration (`LXD_CONF` when
-needed). The scenario never deletes projects, networks or profiles. Names contain
-a checkout-path hash and scenario name; ownership markers protect colliding,
-unowned instances. Use one run per checkout/scenario and remote/project at a time.
+Keep these settings throughout a run. The `lxc` on PATH must use your authenticated
+configuration (`LXD_CONF` when needed). Use one run per checkout/scenario and
+remote/project at a time.
 
 ## Debugging and cleanup
 
@@ -90,10 +78,10 @@ unowned instances. Use one run per checkout/scenario and remote/project at a tim
 skipping initial and final destruction. Run `molecule destroy --all` first for a
 fresh retained run. Inspect with `molecule side-effect --all`, then reapply/verify
 one scenario or explicitly clean up with `molecule destroy --all`.
-Normal failed tests collect diagnostics before destruction through Molecule
-26.11's automatic failure cleanup, independently of `test_sequence`. Verification
-also preserves the original failing task/error. Private keys are not printed.
-CI retains guests for diagnostics and always attempts explicit cleanup.
+Normal failed tests print diagnostics before destroying their guests. After an
+interrupted process, run `molecule destroy --all` explicitly. Cleanup removes only
+owned test guests and their disposable certificates; it refuses unowned name
+collisions and does not delete projects, networks or profiles.
 
 To inspect guests directly, select a scenario and calculate its prefix:
 
@@ -107,37 +95,21 @@ lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" --
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" -- bash
 ```
 
-The lighthouse service is named `lighthouse`, rather than `nebula`. Preparation
-uses bounded IPv4 package downloads; failures include package-manager logs.
+The lighthouse service is named `lighthouse`, rather than `nebula`.
+Diagnostics include package-manager logs when prerequisite installation fails.
 For bridge/Docker forwarding issues, see [Canonical's firewall guidance](https://documentation.ubuntu.com/lxd/en/latest/howto/network_bridge_firewalld/).
-Do not flush host firewall rules. Explicit `molecule destroy` may be needed after
-an interrupted process; it also removes disposable certificates and keys.
-
-### Development-time negative control
-
-After create/converge, use the prefix and remote/project variables above:
-
-```bash
-molecule verify -s "$SCENARIO"  # Must pass
-# Stop cron too: the role's watchdog can otherwise restart a stopped Nebula.
-lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node2" --project "$NEBULA_TEST_PROJECT" -- systemctl stop cron nebula
-molecule verify -s "$SCENARIO"  # Must fail with a non-zero exit and failed overlay ping
-lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node2" --project "$NEBULA_TEST_PROJECT" -- systemctl start nebula cron
-molecule verify -s "$SCENARIO"  # Must pass again
-molecule destroy -s "$SCENARIO"
-```
-
-Restore both services even after unexpected results. This exercises the same
-verifier as CI and is not an additional automated test.
 
 ## Adding regression tests
 
-Add an assertion in `default/verify.yml` and confirm it fails against the unfixed
-role. Implement the fix, rerun `molecule converge` and `molecule verify`, then run
-the complete `molecule test --all` suite. As checks grow, include ordinary task files
-under `default/checks/`; reuse provisioning and inventory without changing CI.
+Add an assertion in `molecule/default/verify.yml` and confirm it fails against
+the unfixed role. Implement the fix, rerun `molecule converge` and
+`molecule verify`, then run the complete `molecule test --all` suite. As checks
+grow, include task files under `molecule/default/checks/`; reuse provisioning
+and inventory without changing CI.
 
-The built-in default/delegated driver avoids the archived `molecule-lxd` plugin;
-`molecule-plugins` does not include LXD. Lifecycle uses the standard CLI, and the
-role is included by absolute checkout path. CI's alpha LXD setup action is pinned
-to a reviewed SHA and a stable LXD channel.
+Shared inventory and lifecycle configuration live in `.config/molecule/config.yml`;
+playbooks are shared in `molecule/default/`. Overlay addresses are `10.43.0.1`,
+`.2` and `.3` with a `/24` prefix; change them together in the shared configuration
+if they conflict locally. To add a version, copy `molecule/nebula-1-12/molecule.yml`
+to a new scenario directory and change `nebula_version`; `--all` includes it
+automatically.
