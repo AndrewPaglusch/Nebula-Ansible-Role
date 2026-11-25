@@ -42,6 +42,21 @@ The pinned harness uses Ansible 2.20, not the role's historical 2.4 minimum.
 Molecule also installs the declared collections. `jmespath` supports certificate
 inspection; `ansible.windows` resolves the role's Windows handlers on Linux.
 
+## Selecting a Nebula version
+
+By default, the scenario uses the role's default Nebula version. Override it with
+Ansible extra variables after Molecule's `--` separator:
+
+```bash
+molecule test -- -e "nebula_version=1.8.0"
+molecule test -- -e "nebula_version=1.12.0"
+```
+
+Each command runs the complete scenario with fresh containers. Run them
+sequentially in one checkout. For iterative work, use
+`molecule converge -- -e "nebula_version=1.12.0"`, then `molecule verify`;
+verification uses the installed version and does not redeploy.
+
 ## Iteration and remote access
 
 ```bash
