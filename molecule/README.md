@@ -1,7 +1,7 @@
 # Integration testing
 
-The same smoke test runs against Nebula 1.8.0 and 1.12.0. Each scenario deploys
-**this checkout** to three fresh unprivileged Ubuntu 24.04 LXD containers:
+The same smoke test runs against the role's default Nebula version and 1.12.0.
+Each scenario deploys **this checkout** to three fresh unprivileged Ubuntu 24.04 LXD containers:
 `lighthouse` (also the disposable CA), `node1` and `node2`. It verifies
 node1 can ping node2's Nebula address, bound to the interface read from the
 installed configuration. Ansible manages guests through LXD, independently of
@@ -45,12 +45,13 @@ inspection; `ansible.windows` resolves the role's Windows handlers on Linux.
 
 ## Selecting a Nebula version
 
-The two six-line scenario files select versions; shared configuration lives in
+The `default` scenario inherits `nebula_version` from the role's `defaults/main.yml`;
+`nebula-1-12` explicitly selects 1.12.0. Shared configuration lives in
 `.config/molecule/config.yml`. All playbooks remain shared in `molecule/default/`.
 
 ```bash
 molecule test --all                # Both versions, each with fresh containers
-molecule test                      # default scenario: 1.8.0 only
+molecule test                      # Role's default Nebula version
 molecule test -s nebula-1-12        # 1.12.0 only
 ```
 

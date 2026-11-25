@@ -159,8 +159,9 @@ ansible-playbook -i inventory nebula.yml
 
 # Integration Testing
 
-Run `molecule test --all` to verify real Nebula overlay connectivity with Nebula
-1.8.0 and 1.12.0, each on a fresh lighthouse and two Ubuntu 24.04 LXD nodes.
-Use `molecule test` for just 1.8.0 or `molecule test -s nebula-1-12` for 1.12.0.
+Run `molecule test --all` to verify real Nebula overlay connectivity with the
+role's default Nebula version and 1.12.0, each on a fresh lighthouse and two Ubuntu
+24.04 LXD nodes. Use `molecule test` for the role's default version or
+`molecule test -s nebula-1-12` for 1.12.0.
 See the [testing guide](molecule/README.md) for prerequisites, other version
 overrides, local debugging and adding regression checks.

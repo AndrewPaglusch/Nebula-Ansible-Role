@@ -1,6 +1,3 @@
 ---
-provisioner:
-  inventory:
-    group_vars:
-      all:
-        nebula_version: '1.8.0'
+# Inherit shared configuration and use nebula_version from the role's defaults.
+{}
