@@ -1,4 +1,6 @@
 ---
+- ansible.builtin.import_playbook: validate.yml
+
 - name: Prepare Linux prerequisites without installing Nebula
   hosts: nebula_test
   gather_facts: false

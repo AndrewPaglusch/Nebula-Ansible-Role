@@ -6,27 +6,25 @@
     ansible_connection: local
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
   tasks:
-    - name: List LXD instances in the selected project
-      timeout: 30
-      ignore_errors: true
-      ansible.builtin.command:
-        argv:
-          - lxc
-          - list
-          - "{{ hostvars['lighthouse'].ansible_lxd_remote }}:"
-          - --project
-          - "{{ hostvars['lighthouse'].ansible_lxd_project }}"
-      register: instances
-      changed_when: false
-      failed_when: false
+    - name: Resolve identity and inspect provisioning state
+      ansible.builtin.include_tasks:
+        file: resources.yml
+        apply:
+          ignore_errors: true
+      vars:
+        test_validate_ownership: false
 
     - name: Print provisioning state
       ansible.builtin.debug:
-        msg: "{{ instances.stdout_lines | default([]) + instances.stderr_lines | default([]) }}"
+        msg: "{{ hostvars['localhost'].test_instances.stdout | default('[]', true) | from_json | map(attribute='name') | list }}"
 
 - name: Collect independent-management diagnostics before cleanup
   hosts: nebula_test
   gather_facts: false
+  vars:
+    test_guest_config: >-
+      {{ (hostvars['localhost'].test_instances.stdout | default('[]', true) | from_json |
+          selectattr('name', 'equalto', ansible_host) | map(attribute='config') | first) | default({}) }}
   tasks:
     - name: Inspect service, journal and network state
       timeout: 30
@@ -45,6 +43,7 @@
       failed_when: false
       ignore_errors: true
       ignore_unreachable: true
+      when: test_guest_config.get('user.nebula-molecule-owner', '') == nebula_test_owner
 
     - name: Print diagnostic results without reading private keys
       ansible.builtin.debug:

@@ -1,4 +1,45 @@
 ---
+- ansible.builtin.import_playbook: validate.yml
+
+- name: Verify the installed Nebula version on every guest
+  hosts: nebula_test
+  gather_facts: false
+  vars:
+    expected_nebula_version: "{{ nebula_version | default(nebula_role_defaults.nebula_version) }}"
+    actual_nebula_version: >-
+      {{ (installed_version.stdout | regex_findall('(?im)^Version:\s*(\S+)') | first) | default('unrecognised') }}
+  tasks:
+    - name: Check the installed version
+      block:
+        - name: Load role defaults without overwriting scenario variables
+          ansible.builtin.include_vars:
+            file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+            name: nebula_role_defaults
+
+        - name: Read the installed Nebula version
+          ansible.builtin.command:
+            argv: ["{{ nebula_config_dir }}/nebula", -version]
+          register: installed_version
+          changed_when: false
+          failed_when: false
+
+        - name: Require the expected version on this guest
+          ansible.builtin.assert:
+            that:
+              - installed_version.rc == 0
+              - actual_nebula_version == expected_nebula_version | string
+            fail_msg: >-
+              {{ inventory_hostname }}: expected Nebula {{ expected_nebula_version }},
+              actual {{ actual_nebula_version }}.
+              Output: {{ installed_version.stdout }} {{ installed_version.stderr }}
+      rescue:
+        - name: Preserve the version failure for diagnostics
+          ansible.builtin.set_fact:
+            verification_failed: true
+            verification_failure:
+              task: "{{ ansible_failed_task.name }}"
+              message: "{{ ansible_failed_result.msg | default('Version check failed') }}"
+
 - name: Verify node-to-node overlay connectivity
   hosts: node1
   gather_facts: false
@@ -30,26 +71,31 @@
       rescue:
         - name: Preserve the original verification failure for diagnostics
           ansible.builtin.set_fact:
-            overlay_failed: true
+            verification_failed: true
             # Keep useful error fields, not slurped configuration or other content.
-            overlay_failure:
+            verification_failure:
               task: "{{ ansible_failed_task.name }}"
               message: "{{ ansible_failed_result.msg | default('Task failed without a message') }}"
               rc: "{{ ansible_failed_result.rc | default('unavailable') }}"
               stdout: "{{ ansible_failed_result.stdout | default('') }}"
               stderr: "{{ ansible_failed_result.stderr | default('') }}"
+      when: >-
+        groups['nebula_test'] | map('extract', hostvars) |
+        selectattr('verification_failed', 'defined') | selectattr('verification_failed') | list | length == 0
 
 - ansible.builtin.import_playbook: diagnostics.yml
-  when: hostvars['node1'].overlay_failed | default(false)
+  when: >-
+    groups['nebula_test'] | map('extract', hostvars) |
+    selectattr('verification_failed', 'defined') | selectattr('verification_failed') | list | length > 0
 
 - name: Preserve the verifier's failed exit status after diagnostics
-  hosts: node1
+  hosts: nebula_test
   gather_facts: false
   tasks:
     - name: Require successful Nebula verification
       ansible.builtin.assert:
-        that: not (overlay_failed | default(false))
+        that: not (verification_failed | default(false))
         fail_msg: |-
           Nebula verification failed. Original failing operation:
-          {{ overlay_failure | default({}) | to_nice_yaml }}
+          {{ verification_failure | default({}) | to_nice_yaml }}
           See diagnostics above.

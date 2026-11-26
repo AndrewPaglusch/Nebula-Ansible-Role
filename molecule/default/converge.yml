@@ -1,4 +1,6 @@
 ---
+- ansible.builtin.import_playbook: validate.yml
+
 - name: Deploy the checked-out Nebula role
   hosts: nebula_test
   gather_facts: true

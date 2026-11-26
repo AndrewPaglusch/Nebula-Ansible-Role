@@ -1,10 +1,35 @@
 ---
-# Shared by create/destroy: inspect before touching any existing instance.
+# Resolve identity and inspect ownership before touching any existing instance.
+- name: Resolve this checkout's test resources
+  ansible.builtin.set_fact:
+    test_remote: "{{ hostvars['lighthouse'].ansible_lxd_remote }}"
+    test_project: "{{ hostvars['lighthouse'].ansible_lxd_project }}"
+    test_owner: "{{ hostvars['lighthouse'].nebula_test_owner }}"
+    test_names: "{{ groups['nebula_test'] | map('extract', hostvars, 'ansible_host') | list }}"
+
+- name: Require valid LXD instance names
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - item | length <= 63
+      - item is match('^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$')
+    fail_msg: "Invalid LXD name {{ item }}; use a scenario name of at most 16 letters, digits or hyphens."
+  loop: "{{ test_names }}"
+
 - name: List instances in the selected LXD project
+  timeout: 30
   ansible.builtin.command:
     argv: [lxc, list, "{{ test_remote }}:", --project, "{{ test_project }}", --format, json]
   register: test_instances
   changed_when: false
+
+- name: Require every guest before convergence
+  ansible.builtin.assert:
+    quiet: true
+    that: item in (test_instances.stdout | from_json | map(attribute='name') | list)
+    fail_msg: "Missing instance {{ item }} in {{ test_remote }}:{{ test_project }}; run molecule create first."
+  loop: "{{ test_names }}"
+  when: test_require_instances | default(false)
 
 - name: Refuse to manage an instance owned by someone else
   ansible.builtin.assert:
@@ -15,4 +40,6 @@
   loop: "{{ test_instances.stdout | from_json }}"
   loop_control:
     label: "{{ item.name }}"
-  when: item.name in test_names
+  when:
+    - test_validate_ownership | default(true)
+    - item.name in test_names

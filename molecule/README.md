@@ -1,8 +1,9 @@
 # Integration testing
 
 Each scenario installs this checkout on three fresh Ubuntu 24.04 LXD containers:
-`lighthouse` (also the disposable CA), `node1` and `node2`. Verification pings
-node2's overlay address from node1, bound to the configured Nebula interface.
+`lighthouse` (also the disposable CA), `node1` and `node2`. Verification checks the
+installed Nebula version on all three guests, then pings node2's overlay address
+from node1, bound to the configured Nebula interface.
 Ansible manages the guests through LXD, independently of Nebula and without SSH.
 
 ## Prerequisites and installation
@@ -72,6 +73,12 @@ Keep these settings throughout a run. The `lxc` on PATH must use your authentica
 configuration (`LXD_CONF` when needed). Use one run per checkout/scenario and
 remote/project at a time.
 
+The first command needing guest identity creates a random ID in `.molecule-id`,
+which is gitignored and reused by subsequent commands. Keep this file until all
+guests are destroyed; do not copy it into another checkout. Moving the checkout
+with its ID preserves ownership, but changing the ID leaves the old guests for
+manual cleanup. Scenario names must use at most 16 letters, digits or hyphens.
+
 ## Debugging and cleanup
 
 `molecule test --all --destroy=never` retains both environments (six guests),
@@ -89,7 +96,7 @@ To inspect guests directly, select a scenario and calculate its prefix:
 export NEBULA_TEST_REMOTE="${NEBULA_TEST_REMOTE:-local}"
 export NEBULA_TEST_PROJECT="${NEBULA_TEST_PROJECT:-default}"
 SCENARIO=default  # Or nebula-1-12
-PREFIX="$(python -c 'import hashlib,pathlib; print("nebula-smoke-" + hashlib.sha1(str(pathlib.Path.cwd().resolve()).encode()).hexdigest()[:10])')-$SCENARIO"
+PREFIX="nb-$(cat .molecule-id)-$SCENARIO"
 lxc list "$NEBULA_TEST_REMOTE:" --project "$NEBULA_TEST_PROJECT"
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" -- journalctl -u nebula --no-pager -n 100
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" -- bash
