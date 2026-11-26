@@ -113,3 +113,6 @@ playbooks are shared in `molecule/default/`. Overlay addresses are `10.43.0.1`,
 if they conflict locally. To add a version, copy `molecule/nebula-1-12/molecule.yml`
 to a new scenario directory and change `nebula_version`; `--all` includes it
 automatically.
+
+CI selects scenarios explicitly in `.github/workflows/integration.yml`; add new
+scenarios to its matrix list to run them on pull requests.
