@@ -65,7 +65,9 @@
               - "{{ hostvars['node2'].nebula_internal_ip_addr }}"
           register: overlay_ping
           until: overlay_ping.rc == 0
-          retries: 12
+          # The role restarts the lighthouse after nodes. Allow its 60-second
+          # registration interval plus peer-handshake retries after that restart.
+          retries: 30
           delay: 2
           changed_when: false
       rescue:
