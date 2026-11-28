@@ -17,14 +17,15 @@
 
 - name: Parse the IP address from the certificate details (if it exists)
   set_fact:
-    current_cert_ip: "{{ current_cert_json.stdout | from_json | json_query('details.ips[0]') }}"
+    # Nebula v1.9.x and earlier use details.ips[0]; v1.10.0 onwards use [0].details.networks[0].
+    current_cert_ip: "{{ current_cert_json.stdout | from_json | json_query('[0].details.networks[0] || details.ips[0]') }}"
   when:
     - cert_stat.stat.exists
     - current_cert_json.stdout != ""
 
 - name: Parse the groups from the certificate details (if it exists)
   set_fact:
-    current_cert_groups: "{{ current_cert_json.stdout | from_json | json_query('details.groups') | default([], true) }}"
+    current_cert_groups: "{{ current_cert_json.stdout | from_json | json_query('[0].details.groups || details.groups') | default([], true) }}"
   when:
     - cert_stat.stat.exists
     - current_cert_json.stdout != ""
