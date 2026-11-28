@@ -1,6 +1,8 @@
 ---
 - ansible.builtin.import_playbook: validate.yml
 
+# Save check failures so standalone `molecule verify` can also collect diagnostics.
+# The final assertion below fails the playbook again after diagnostics run.
 - name: Verify the installed Nebula version on every guest
   hosts: nebula_test
   gather_facts: false
@@ -53,16 +55,14 @@
 
         - name: Ping node2's Nebula address through node1's Nebula interface
           ansible.builtin.command:
-            argv:
-              - ping
-              - -I
-              - "{{ (installed_config.content | b64decode | from_yaml).tun.dev }}"
-              - -n
-              - -c
-              - '1'
-              - -W
-              - '2'
-              - "{{ hostvars['node2'].nebula_internal_ip_addr }}"
+            argv: [
+              ping,
+              -I, "{{ (installed_config.content | b64decode | from_yaml).tun.dev }}",
+              -n,
+              -c, '1',
+              -W, '2',
+              "{{ hostvars['node2'].nebula_internal_ip_addr }}"
+            ]
           register: overlay_ping
           until: overlay_ping.rc == 0
           # The role restarts the lighthouse after nodes. Allow its 60-second
@@ -90,6 +90,7 @@
     groups['nebula_test'] | map('extract', hostvars) |
     selectattr('verification_failed', 'defined') | selectattr('verification_failed') | list | length > 0
 
+# A successful rescue handles the Ansible error; fail explicitly so verify exits nonzero.
 - name: Preserve the verifier's failed exit status after diagnostics
   hosts: nebula_test
   gather_facts: false

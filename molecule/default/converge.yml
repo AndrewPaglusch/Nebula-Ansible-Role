@@ -5,6 +5,7 @@
   hosts: nebula_test
   gather_facts: true
   vars:
+    # Use the lighthouse's LXD underlay IP so nodes can reach it before Nebula is up.
     nebula_lighthouse_public_hostname: "{{ hostvars['lighthouse'].ansible_facts.default_ipv4.address }}"
   tasks:
     - name: Apply this checkout using the normal lighthouse-hosted CA

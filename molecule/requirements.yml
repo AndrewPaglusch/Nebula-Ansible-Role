@@ -2,7 +2,7 @@
 roles: []
 collections:
   - name: community.general
-    version: 13.5.0
+    version: 14.0.1
   # The role's handlers reference Windows modules, even in a Linux-only play.
   - name: ansible.windows
-    version: 3.5.0
+    version: 3.9.2

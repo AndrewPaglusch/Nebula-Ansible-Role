@@ -9,9 +9,9 @@
     - name: Inspect resource ownership
       ansible.builtin.include_tasks: resources.yml
 
-    - name: Initialise missing Ubuntu 24.04 containers
+    - name: Initialise missing Ubuntu 26.04 containers
       ansible.builtin.command:
-        argv: [lxc, init, 'ubuntu:24.04', "{{ test_remote }}:{{ item }}", --project, "{{ test_project }}"]
+        argv: [lxc, init, 'ubuntu:26.04', "{{ test_remote }}:{{ item }}", --project, "{{ test_project }}"]
         stdin: "{{ test_config | to_nice_yaml }}"
       vars:
         test_config:

@@ -30,12 +30,8 @@ provisioner:
   inventory:
     group_vars:
       all:
-        nebula_test_owner: >-
-          {{ lookup('ansible.builtin.pipe',
-             (ansible_playbook_python | default('python3') | quote) ~ ' ' ~
-             ((lookup('env', 'MOLECULE_PROJECT_DIRECTORY') ~ '/molecule/identity.py') | quote) ~ ' ' ~
-             (lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | quote)) }}
-        nebula_test_prefix: "nb-{{ nebula_test_owner }}-${MOLECULE_SCENARIO_NAME}"
+        nebula_test_owner: "${MOLECULE_PROJECT_DIRECTORY}"
+        nebula_test_prefix: "nb-{{ (nebula_test_owner | hash('sha256'))[:16] }}-${MOLECULE_SCENARIO_NAME}"
         ansible_connection: community.general.lxd
         ansible_lxd_remote: "${NEBULA_TEST_REMOTE:-local}"
         ansible_lxd_project: "${NEBULA_TEST_PROJECT:-default}"
@@ -56,6 +52,7 @@ provisioner:
 verifier:
   name: ansible
 scenario:
+  # On failure, Molecule runs the cleanup hook before destroying guests it won't retain.
   test_sequence:
     - dependency
     - destroy

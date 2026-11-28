@@ -1,6 +1,6 @@
 # Integration testing
 
-Each scenario installs this checkout on three fresh Ubuntu 24.04 LXD containers:
+Each scenario installs this checkout on three fresh Ubuntu 26.04 LXD containers:
 `lighthouse` (also the disposable CA), `node1` and `node2`. Verification checks the
 installed Nebula version on all three guests, then pings node2's overlay address
 from node1, bound to the configured Nebula interface.
@@ -69,15 +69,11 @@ export NEBULA_TEST_REMOTE=my-remote NEBULA_TEST_PROJECT=my-test-project
 molecule test --all
 ```
 
-Keep these settings throughout a run. The `lxc` on PATH must use your authenticated
-configuration (`LXD_CONF` when needed). Use one run per checkout/scenario and
-remote/project at a time.
-
-The first command needing guest identity creates a random ID in `.molecule-id`,
-which is gitignored and reused by subsequent commands. Keep this file until all
-guests are destroyed; do not copy it into another checkout. Moving the checkout
-with its ID preserves ownership, but changing the ID leaves the old guests for
-manual cleanup. Scenario names must use at most 16 letters, digits or hyphens.
+The `lxc` on PATH must use your authenticated configuration (`LXD_CONF` when
+needed). **Developers sharing an LXD remote must use different LXD projects**:
+identical checkout paths can produce identical guest names. Use one run per
+checkout and scenario at a time. Keep the checkout path, remote and project the
+same until cleanup finishes.
 
 ## Debugging and cleanup
 
@@ -96,7 +92,8 @@ To inspect guests directly, select a scenario and calculate its prefix:
 export NEBULA_TEST_REMOTE="${NEBULA_TEST_REMOTE:-local}"
 export NEBULA_TEST_PROJECT="${NEBULA_TEST_PROJECT:-default}"
 SCENARIO=default  # Or nebula-1-12
-PREFIX="nb-$(cat .molecule-id)-$SCENARIO"
+CHECKOUT_HASH=$(python -c 'import hashlib, pathlib; print(hashlib.sha256(str(pathlib.Path.cwd()).encode()).hexdigest()[:16])')
+PREFIX="nb-$CHECKOUT_HASH-$SCENARIO"
 lxc list "$NEBULA_TEST_REMOTE:" --project "$NEBULA_TEST_PROJECT"
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" -- journalctl -u nebula --no-pager -n 100
 lxc exec "$NEBULA_TEST_REMOTE:$PREFIX-node1" --project "$NEBULA_TEST_PROJECT" -- bash

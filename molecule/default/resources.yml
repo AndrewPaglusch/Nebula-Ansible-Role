@@ -7,15 +7,6 @@
     test_owner: "{{ hostvars['lighthouse'].nebula_test_owner }}"
     test_names: "{{ groups['nebula_test'] | map('extract', hostvars, 'ansible_host') | list }}"
 
-- name: Require valid LXD instance names
-  ansible.builtin.assert:
-    quiet: true
-    that:
-      - item | length <= 63
-      - item is match('^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$')
-    fail_msg: "Invalid LXD name {{ item }}; use a scenario name of at most 16 letters, digits or hyphens."
-  loop: "{{ test_names }}"
-
 - name: List instances in the selected LXD project
   timeout: 30
   ansible.builtin.command:

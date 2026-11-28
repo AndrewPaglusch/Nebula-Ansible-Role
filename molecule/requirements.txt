@@ -1,3 +1,4 @@
-molecule==26.11.0
-ansible-core==2.20.11
-jmespath==1.0.1
+molecule==26.11.1
+# Ansible Core 2.22+ requires Python 3.13; CI uses Python 3.12.
+ansible-core==2.21.6
+jmespath==1.1.0
